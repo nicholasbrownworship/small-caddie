@@ -2,1132 +2,874 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Mini Caddie — Saturday MVP</title>
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-
   <style>
     :root{
       --bg:#0b0e14;
-      --panel: rgba(16, 20, 30, .88);
-      --panel2: rgba(16, 20, 30, .70);
-      --text:#e9e6dc;
+      --panel:rgba(255,255,255,0.06);
+      --panel2:rgba(255,255,255,0.09);
+      --ink:#e9e6dc;
       --muted:#b7b1a2;
       --dim:#7d776b;
       --gold:#d1a14b;
       --green:#3fbf7f;
       --red:#cc3b3b;
       --blue:#4aa6ff;
-      --radius:16px;
-      --shadow: 0 14px 40px rgba(0,0,0,.45);
-      --hairline: rgba(233, 230, 220, .10);
-      --tap: 48px;
+      --radius:18px;
+      --shadow: 0 18px 50px rgba(0,0,0,0.35);
     }
-
     *{ box-sizing:border-box; }
-    html, body{ height:100%; }
     body{
       margin:0;
-      background: radial-gradient(1200px 800px at 50% -10%, rgba(74,166,255,.12), transparent 55%),
-                  radial-gradient(900px 700px at 10% 10%, rgba(209,161,75,.10), transparent 55%),
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+      background: radial-gradient(1200px 700px at 30% -10%, rgba(74,166,255,0.18), transparent 55%),
+                  radial-gradient(900px 600px at 100% 0%, rgba(209,161,75,0.16), transparent 55%),
                   var(--bg);
-      color:var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      overflow:hidden;
+      color:var(--ink);
+      min-height:100vh;
     }
-
-    .app{
-      height:100%;
-      display:flex;
-      flex-direction:column;
+    .wrap{
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 12px 12px 24px;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
     }
-
-    /* Top Bar */
     .topbar{
-      position:sticky;
-      top:0;
-      z-index:50;
-      padding:10px 12px 10px;
-      background: linear-gradient(to bottom, rgba(11,14,20,.95), rgba(11,14,20,.80));
-      border-bottom:1px solid var(--hairline);
+      position: sticky;
+      top: 0;
+      z-index: 10;
       backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(11,14,20,0.92), rgba(11,14,20,0.60));
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 10px 12px;
+      border-radius: 0 0 18px 18px;
     }
-
-    .toprow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-
+    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
     .pill{
-      background: var(--panel);
-      border:1px solid var(--hairline);
-      border-radius:999px;
-      padding:8px 10px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.25);
-    }
-
-    select, button, .btn{
-      font: inherit;
-      color: var(--text);
-    }
-
-    select{
-      background: transparent;
-      border:none;
-      outline:none;
-      padding:0;
-      appearance:none;
-    }
-
-    .gpsdot{
-      width:10px;height:10px;border-radius:50%;
-      background: var(--dim);
-      box-shadow: 0 0 0 3px rgba(125,119,107,.18);
-    }
-    .gpsdot.good{
-      background: var(--green);
-      box-shadow: 0 0 0 3px rgba(63,191,127,.18);
-    }
-    .gpsdot.bad{
-      background: var(--red);
-      box-shadow: 0 0 0 3px rgba(204,59,59,.18);
-    }
-
-    .distrow{
-      margin-top:10px;
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:8px;
-    }
-    .dist{
-      background: var(--panel2);
-      border:1px solid var(--hairline);
-      border-radius: 14px;
-      padding:10px 10px;
-      min-height: 54px;
-    }
-    .dist .k{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
       color: var(--muted);
-      font-size:12px;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-    }
-    .dist .v{
-      margin-top:4px;
-      font-size:20px;
-      font-weight:800;
-    }
-    .dist .sub{
-      color: var(--dim);
-      font-size:12px;
-      margin-top:2px;
-    }
-
-    /* Map */
-    #map{
-      flex:1;
-      width:100%;
-      z-index:1;
-    }
-
-    /* Bottom Controls */
-    .bottom{
-      position:relative;
-      z-index:40;
-      padding:10px 12px 14px;
-      background: linear-gradient(to top, rgba(11,14,20,.92), rgba(11,14,20,.55));
-      border-top:1px solid var(--hairline);
-      backdrop-filter: blur(10px);
-    }
-
-    .actions{
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap:10px;
-    }
-
-    .actionBtn{
-      height: var(--tap);
-      border-radius: 14px;
-      border:1px solid var(--hairline);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      font-weight:700;
-      cursor:pointer;
+      font-size: 13px;
       user-select:none;
     }
-    .actionBtn.primary{
-      border-color: rgba(209,161,75,.35);
-      box-shadow: 0 16px 44px rgba(209,161,75,.10), var(--shadow);
+    .btn{
+      border:0; cursor:pointer;
+      color: var(--ink);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 650;
+      letter-spacing: .2px;
+      box-shadow: none;
     }
-    .actionBtn:active{ transform: translateY(1px); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(209,161,75,0.95), rgba(209,161,75,0.65));
+      border-color: rgba(209,161,75,0.55);
+      color: #140f06;
+    }
+    .btn.ghost{
+      background: transparent;
+      border-color: rgba(255,255,255,0.14);
+      color: var(--muted);
+    }
+    .holeCtl{
+      display:flex; align-items:center; gap:8px;
+    }
+    .holeNum{
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .parTag{
+      font-size: 12px;
+      font-weight: 750;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(74,166,255,0.16);
+      border: 1px solid rgba(74,166,255,0.28);
+      color: rgba(232,242,255,0.92);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
 
     .card{
-      margin-top:10px;
-      background: var(--panel2);
-      border:1px solid var(--hairline);
-      border-radius: var(--radius);
-      padding:12px;
-    }
-    .card h3{
-      margin:0 0 8px;
-      font-size:14px;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      color: var(--muted);
-    }
-    .recText{
-      font-size:15px;
-      line-height:1.35;
-      font-weight:650;
-    }
-    .recText .gold{ color: var(--gold); }
-    .recText .green{ color: var(--green); }
-    .recText .blue{ color: var(--blue); }
-    .recText .dim{ color: var(--dim); font-weight:600; }
-
-    /* Shot Sheet */
-    .sheet{
-      position:fixed;
-      left:0; right:0; bottom:-100%;
-      z-index:80;
-      transition: bottom .22s ease;
-      padding:10px 12px 14px;
-      background: rgba(11,14,20,.96);
-      border-top:1px solid var(--hairline);
-      backdrop-filter: blur(10px);
-    }
-    .sheet.open{ bottom:0; }
-
-    .sheetHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .sheetHeader .title{
-      font-weight:800;
-      font-size:16px;
-    }
-    .sheetHeader .close{
-      width:42px;height:42px;
-      border-radius: 14px;
-      border:1px solid var(--hairline);
       background: var(--panel);
-      cursor:pointer;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
     }
+    .card .hd{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card .hd h2{
+      margin:0; font-size: 14px; letter-spacing: .2px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .card .bd{ padding: 14px; }
 
-    .grid3{
+    .yards{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .pinBig{
+      display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .pinBig .label{ color: var(--muted); font-size: 13px; font-weight: 700; }
+    .pinBig .val{ font-size: 52px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+    .pinBig .unit{ color: var(--muted); font-weight: 700; font-size: 14px; }
+
+    .fcb{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
-      gap:10px;
+      gap: 10px;
     }
+    .mini{
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+    }
+    .mini .k{ color: var(--muted); font-size: 12px; font-weight: 750; }
+    .mini .v{ font-size: 22px; font-weight: 900; margin-top: 2px; }
+    .subline{ margin-top: 8px; color: var(--dim); font-size: 12px; }
 
-    .group{
-      background: var(--panel);
-      border:1px solid var(--hairline);
-      border-radius: var(--radius);
-      padding:10px;
+    .nudge{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
-    .group .label{
+    .nudgeBox{
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(74,166,255,0.10);
+      border: 1px solid rgba(74,166,255,0.22);
+    }
+    .nudgeBox .t{ font-weight: 900; font-size: 14px; color: rgba(232,242,255,0.95); }
+    .nudgeBox .d{ margin-top: 4px; color: rgba(232,242,255,0.78); font-size: 13px; }
+
+    .mapWrap{
+      position: relative;
+      height: 320px;
+      background:
+        linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px);
+      border-radius: 16px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    canvas{ width:100%; height:100%; display:block; }
+    .mapLegend{
+      position:absolute; left:10px; top:10px;
+      display:flex; gap:8px; flex-wrap:wrap;
+      max-width: calc(100% - 20px);
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:7px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 12px;
       color: var(--muted);
-      font-size:12px;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      margin-bottom:8px;
     }
+    .dot{ width:8px; height:8px; border-radius:99px; background: var(--muted); }
+    .dot.green{ background: var(--green); }
+    .dot.gold{ background: var(--gold); }
+    .dot.red{ background: var(--red); }
+    .dot.blue{ background: var(--blue); }
 
+    .pickers{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .picker .title{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom: 8px;
+    }
+    .picker .title span{
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
     .chips{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
+      display:flex; flex-wrap:wrap; gap:8px;
     }
-
     .chip{
-      height:40px;
-      padding:0 12px;
-      border-radius:999px;
-      border:1px solid var(--hairline);
-      background: rgba(255,255,255,.03);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:750;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: var(--ink);
+      padding: 10px 10px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 13px;
       cursor:pointer;
       user-select:none;
-      white-space:nowrap;
     }
+    .chip.small{ padding: 8px 10px; font-weight: 750; }
     .chip.on{
-      border-color: rgba(74,166,255,.35);
-      background: rgba(74,166,255,.12);
+      background: rgba(209,161,75,0.22);
+      border-color: rgba(209,161,75,0.55);
     }
-
-    .saveRow{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-      margin-top:10px;
+    .actions{
+      display:flex; gap:10px; align-items:center;
+      margin-top: 12px;
     }
-
-    .bigBtn{
-      height: var(--tap);
-      border-radius: 14px;
-      border:1px solid var(--hairline);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      font-weight:850;
+    .actions .btn{ flex: 1; padding: 14px 14px; border-radius: 16px; }
+    .link{
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: underline;
       cursor:pointer;
-    }
-    .bigBtn.primary{
-      border-color: rgba(63,191,127,.35);
-      background: rgba(63,191,127,.10);
+      user-select:none;
+      text-align:center;
+      margin-top: 10px;
     }
 
-    /* Leaflet tweaks for dark UI */
-    .leaflet-control-layers{
-      background: rgba(16,20,30,.88) !important;
-      color: var(--text) !important;
-      border: 1px solid var(--hairline) !important;
-      border-radius: 14px !important;
-      box-shadow: var(--shadow) !important;
+    .history{
+      display:flex; gap:10px; flex-direction:column;
     }
-    .leaflet-control-layers label{
-      color: var(--text) !important;
+    .histItem{
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      display:flex; justify-content:space-between; gap:10px;
+      color: var(--muted);
       font-size: 13px;
     }
-    .leaflet-popup-content-wrapper, .leaflet-popup-tip{
-      background: rgba(16,20,30,.94);
-      color: var(--text);
-      border:1px solid var(--hairline);
+    .histItem b{ color: var(--ink); }
+    @media (min-width: 760px){
+      .grid{ grid-template-columns: 1.2fr 1fr; align-items:start; }
     }
   </style>
 </head>
-
 <body>
-<div class="app">
-
-  <div class="topbar">
-    <div class="toprow">
-      <div class="pill">
-        <span style="color:var(--muted); font-size:12px; letter-spacing:.06em; text-transform:uppercase;">Hole</span>
-        <select id="holeSelect"></select>
-      </div>
-
-      <div class="pill" style="flex:1; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div id="gpsDot" class="gpsdot"></div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="row">
+        <div class="holeCtl">
+          <button class="btn ghost" id="holePrev" aria-label="Previous hole">◀︎</button>
           <div>
-            <div style="font-weight:800;">GPS</div>
-            <div id="gpsStatus" style="color:var(--dim); font-size:12px;">Searching…</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="holeNum">Hole <span id="holeNum">1</span></div>
+              <div class="parTag" id="parTag">Par 4</div>
+            </div>
+            <div style="margin-top:2px;color:var(--dim);font-size:12px" id="courseName">Course: Sample Course</div>
+          </div>
+          <button class="btn ghost" id="holeNext" aria-label="Next hole">▶︎</button>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="pill" id="gpsPill">GPS: idle</div>
+          <button class="btn" id="gpsBtn">Locate</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="hd">
+          <h2>Yardages</h2>
+          <div class="pill" id="lastUpdate">—</div>
+        </div>
+        <div class="bd">
+          <div class="yards">
+            <div class="pinBig">
+              <div>
+                <div class="label">TO PIN</div>
+                <div class="subline" id="pinNote">Select hole data to enable</div>
+              </div>
+              <div style="text-align:right">
+                <div class="val" id="toPin">—</div>
+                <div class="unit">yards</div>
+              </div>
+            </div>
+
+            <div class="fcb">
+              <div class="mini">
+                <div class="k">FRONT</div>
+                <div class="v" id="toFront">—</div>
+              </div>
+              <div class="mini">
+                <div class="k">CENTER</div>
+                <div class="v" id="toCenter">—</div>
+              </div>
+              <div class="mini">
+                <div class="k">BACK</div>
+                <div class="v" id="toBack">—</div>
+              </div>
+            </div>
+
+            <div class="nudge">
+              <div class="nudgeBox">
+                <div class="t" id="clubSuggestion">Suggestion: —</div>
+                <div class="d" id="aimNudge">Nudge: —</div>
+              </div>
+            </div>
+
+            <div class="mapWrap">
+              <canvas id="map"></canvas>
+              <div class="mapLegend">
+                <div class="tag"><span class="dot blue"></span>You</div>
+                <div class="tag"><span class="dot gold"></span>Pin</div>
+                <div class="tag"><span class="dot green"></span>Green</div>
+                <div class="tag"><span class="dot red"></span>Hazard/OB</div>
+              </div>
+            </div>
+            <div class="subline">
+              Saturday MVP: this map is a simple overlay viewer. You’ll handwire polygons later (Google Maps → JSON).
+            </div>
           </div>
         </div>
-        <div style="text-align:right;">
-          <div style="color:var(--muted); font-size:12px; letter-spacing:.06em; text-transform:uppercase;">Acc</div>
-          <div id="gpsAcc" style="font-weight:800;">—</div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>Quick Log (3 taps)</h2>
+          <div class="pill" id="shotMode">Mode: Approach</div>
+        </div>
+        <div class="bd">
+          <div class="pickers">
+
+            <div class="picker">
+              <div class="title"><span>CLUB</span><span id="clubPicked" style="color:var(--dim);font-weight:800">—</span></div>
+              <div class="chips" id="clubChips"></div>
+            </div>
+
+            <div class="picker">
+              <div class="title"><span>SHOT SHAPE</span><span id="shapePicked" style="color:var(--dim);font-weight:800">—</span></div>
+              <div class="chips" id="shapeChips"></div>
+            </div>
+
+            <div class="picker">
+              <div class="title"><span>RESULT</span><span id="resultPicked" style="color:var(--dim);font-weight:800">—</span></div>
+              <div class="chips" id="resultChips"></div>
+            </div>
+
+            <div class="actions">
+              <button class="btn primary" id="logBtn">LOG SHOT</button>
+              <button class="btn" id="resetPick">Clear</button>
+            </div>
+            <div class="link" id="undoBtn">Undo last shot</div>
+
+            <div class="picker" style="margin-top:6px">
+              <div class="title"><span>Recent</span><span style="color:var(--dim);font-weight:800" id="shotsCount">0 shots</span></div>
+              <div class="history" id="history"></div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="distrow">
-      <div class="dist">
-        <div class="k">Front</div>
-        <div class="v" id="dFront">—</div>
-        <div class="sub">yards</div>
-      </div>
-      <div class="dist">
-        <div class="k">Center</div>
-        <div class="v" id="dCenter">—</div>
-        <div class="sub">yards</div>
-      </div>
-      <div class="dist">
-        <div class="k">Back</div>
-        <div class="v" id="dBack">—</div>
-        <div class="sub">yards</div>
-      </div>
-      <div class="dist">
-        <div class="k">Pin</div>
-        <div class="v" id="dPin">—</div>
-        <div class="sub">yards</div>
-      </div>
-    </div>
   </div>
-
-  <div id="map"></div>
-
-  <div class="bottom">
-    <div class="actions">
-      <button class="actionBtn" id="btnRecenter">Recenter</button>
-      <button class="actionBtn primary" id="btnLog">Log Shot</button>
-      <button class="actionBtn" id="btnEdit">Edit: Off</button>
-    </div>
-
-    <div class="card">
-      <h3>Recommendation</h3>
-      <div class="recText" id="recText">
-        <span class="dim">Waiting for GPS + a shot log. Once you log shots, I’ll suggest clubs and aim nudges.</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Shot logging sheet -->
-  <div class="sheet" id="sheet">
-    <div class="sheetHeader">
-      <div class="title">Log Shot</div>
-      <button class="close" id="btnClose">✕</button>
-    </div>
-
-    <div class="group">
-      <div class="label">Club</div>
-      <div class="chips" id="clubChips"></div>
-    </div>
-
-    <div class="group" style="margin-top:10px;">
-      <div class="label">Shot shape</div>
-      <div class="chips" id="shapeChips"></div>
-    </div>
-
-    <div class="group" style="margin-top:10px;">
-      <div class="label">Result</div>
-      <div class="chips" id="resultChips"></div>
-    </div>
-
-    <div class="saveRow">
-      <button class="bigBtn" id="btnCancel">Cancel</button>
-      <button class="bigBtn primary" id="btnSave">Save Shot</button>
-    </div>
-
-    <div style="margin-top:10px; color:var(--dim); font-size:12px; line-height:1.35;">
-      Saves to your device (localStorage). GitHub Pages is HTTPS, so GPS should work.
-    </div>
-  </div>
-</div>
-
-<!-- Leaflet -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
 
 <script>
-/* =========================
-   Saturday MVP — Mini Caddie
-   ========================= */
-
-/** ------------ Course Data (MVP sample)
- * Replace these with your real course later.
- * For now: 3 holes, simple polygons, a couple hazards/OB lines.
- *
- * Geometry expects WGS84 lat/lng.
+/** =========================
+ *  Saturday MVP — Data Model
+ *  =========================
+ *  - Add real hole/polygon data later.
+ *  - For now, only pin is required for yardages.
+ *  - Green polygon optional; hazards/OB optional.
  */
+
+const STORE_KEY = "miniCaddie_v1";
+
+const DEFAULT_CLUBS = ["D","3W","5W","H","4i","5i","6i","7i","8i","9i","PW","GW","SW","LW"];
+const DEFAULT_SHAPES = ["Straight","Fade","Draw","High","Low","Punch"];
+const DEFAULT_RESULTS = ["Center","Left","Right","Short","Long","Fairway","Green","Hazard","OB"];
+
+// Baseline carry (yards) — tweak to your numbers.
+// The tool will compute "today avg" over time from logged distances if you add landing points later.
+// For Saturday MVP we use baseline until you extend it.
+const BASELINE_YARDS = {
+  "D": 240, "3W": 220, "5W": 205, "H": 190,
+  "4i": 180, "5i": 170, "6i": 160, "7i": 150,
+  "8i": 140, "9i": 130, "PW": 120, "GW": 105,
+  "SW": 90, "LW": 75
+};
+
 const COURSE = {
-  id: "sample-course",
-  name: "Sample Course",
-  holes: Array.from({length: 18}, (_,i) => ({
+  id: "sample",
+  name: "Sample Course (replace me)",
+  holes: Array.from({length:18}).map((_,i)=>({
     n: i+1,
-    par: 4,
-    // Set pin if you have it; otherwise leave null and Pin distance shows —
-    pin: null,
-    // Green polygon. Replace with real points later.
-    green: null,
-    // Optional: front/center/back target points (if you want without polygon math)
-    targets: {
-      front: null,
-      center: null,
-      back: null
-    },
-    // Feature layers (GeoJSON-like lightweight)
-    features: {
-      tees: [], bunkers: [], hazards: [], ob: [], fairway: []
-    }
+    par: [4,4,3,4,5,4,3,4,5,4,4,3,4,5,4,3,4,5][i] || 4,
+    // Replace with real pin coords per hole
+    pin: null, // {lat,lng}
+    // Optional polygons
+    green: [],        // [{lat,lng},...]
+    bunkers: [],      // array of polygons
+    water: [],        // array of polygons
+    ob: [],           // array of polylines/polygons
+    tees: []          // array of polygons
   }))
 };
 
-// Put some sample geometry on hole 1 so you can see it working immediately.
-COURSE.holes[0].pin = { lat: 36.24510, lng: -93.10790 };
+// Example: add one pin so you can test yardages immediately.
+// Replace with your course data.
+COURSE.holes[0].pin = { lat: 36.0620, lng: -93.1270 }; // dummy
 COURSE.holes[0].green = [
-  { lat: 36.24516, lng: -93.10802 },
-  { lat: 36.24522, lng: -93.10788 },
-  { lat: 36.24510, lng: -93.10778 },
-  { lat: 36.24502, lng: -93.10792 }
+  { lat: 36.06205, lng: -93.12690 },
+  { lat: 36.06215, lng: -93.12705 },
+  { lat: 36.06198, lng: -93.12718 },
+  { lat: 36.06190, lng: -93.12698 }
 ];
-COURSE.holes[0].targets.front  = { lat: 36.24518, lng: -93.10798 };
-COURSE.holes[0].targets.center = { lat: 36.24512, lng: -93.10790 };
-COURSE.holes[0].targets.back   = { lat: 36.24506, lng: -93.10782 };
 
-COURSE.holes[0].features.bunkers.push({
-  name: "Front Right Bunker",
-  type: "bunker",
-  poly: [
-    {lat:36.24522, lng:-93.10778},
-    {lat:36.24526, lng:-93.10770},
-    {lat:36.24518, lng:-93.10766},
-    {lat:36.24514, lng:-93.10774}
-  ]
-});
-COURSE.holes[0].features.ob.push({
-  name: "OB Fence",
-  type: "ob",
-  line: [
-    {lat:36.24560, lng:-93.10910},
-    {lat:36.24460, lng:-93.10690}
-  ]
-});
-COURSE.holes[0].features.hazards.push({
-  name: "Pond",
-  type: "hazard",
-  poly: [
-    {lat:36.24480, lng:-93.10880},
-    {lat:36.24492, lng:-93.10852},
-    {lat:36.24470, lng:-93.10838},
-    {lat:36.24458, lng:-93.10862}
-  ]
-});
+// App state
+let state = loadState();
+let watchId = null;
 
-/** ------------ Baseline yardages (you can tune)
- * These become “today averages” after you log a few shots.
- */
-const BASELINE_YARDS = {
-  "Driver": 245, "3W": 225, "5W": 210, "Hybrid": 195,
-  "4i": 185, "5i": 175, "6i": 165, "7i": 155, "8i": 145, "9i": 135,
-  "PW": 125, "GW": 110, "SW": 95, "LW": 80
-};
+// DOM
+const el = (id)=>document.getElementById(id);
+const holeNumEl = el("holeNum");
+const parTagEl = el("parTag");
+const courseNameEl = el("courseName");
+const gpsPillEl = el("gpsPill");
+const lastUpdateEl = el("lastUpdate");
 
-const CLUBS = ["Driver","3W","5W","Hybrid","4i","5i","6i","7i","8i","9i","PW","GW","SW","LW"];
-const SHAPES = ["Straight","Fade","Draw","Cut","Hook","High","Low","Punch"];
-const RESULTS = ["Center","Left","Right","Short","Long","Hazard","OB","Fairway","Green"];
+const toPinEl = el("toPin");
+const toFrontEl = el("toFront");
+const toCenterEl = el("toCenter");
+const toBackEl = el("toBack");
+const pinNoteEl = el("pinNote");
 
-const LS_KEYS = {
-  shots: "minicaddie_shots_v1",
-  clubStats: "minicaddie_clubstats_v1",
-  editMode: "minicaddie_editmode_v1",
-  courseOverrides: "minicaddie_course_overrides_v1" // for saved polygons later
-};
+const clubSuggestionEl = el("clubSuggestion");
+const aimNudgeEl = el("aimNudge");
 
-let state = {
-  hole: 1,
-  editMode: loadJSON(LS_KEYS.editMode, false),
-  pos: null, // {lat,lng,accM}
-  watchId: null,
-  shots: loadJSON(LS_KEYS.shots, []),
-  clubStats: loadJSON(LS_KEYS.clubStats, initClubStats()),
-  // active selections for logger
-  selClub: null,
-  selShape: null,
-  selResult: null,
-};
+const clubChipsEl = el("clubChips");
+const shapeChipsEl = el("shapeChips");
+const resultChipsEl = el("resultChips");
 
-// Apply saved course overrides if any (so your polygon edits persist)
-applyCourseOverrides();
+const clubPickedEl = el("clubPicked");
+const shapePickedEl = el("shapePicked");
+const resultPickedEl = el("resultPicked");
 
-/** ------------ UI Elements */
-const holeSelect = document.getElementById("holeSelect");
-const gpsDot = document.getElementById("gpsDot");
-const gpsStatus = document.getElementById("gpsStatus");
-const gpsAcc = document.getElementById("gpsAcc");
-const dFront = document.getElementById("dFront");
-const dCenter = document.getElementById("dCenter");
-const dBack = document.getElementById("dBack");
-const dPin = document.getElementById("dPin");
-const recText = document.getElementById("recText");
+const historyEl = el("history");
+const shotsCountEl = el("shotsCount");
 
-const btnRecenter = document.getElementById("btnRecenter");
-const btnLog = document.getElementById("btnLog");
-const btnEdit = document.getElementById("btnEdit");
-const sheet = document.getElementById("sheet");
-const btnClose = document.getElementById("btnClose");
-const btnCancel = document.getElementById("btnCancel");
-const btnSave = document.getElementById("btnSave");
+const canvas = el("map");
+const ctx = canvas.getContext("2d");
 
-const clubChips = document.getElementById("clubChips");
-const shapeChips = document.getElementById("shapeChips");
-const resultChips = document.getElementById("resultChips");
+// Controls
+el("holePrev").addEventListener("click", ()=> setHole(state.currentHole - 1));
+el("holeNext").addEventListener("click", ()=> setHole(state.currentHole + 1));
+el("gpsBtn").addEventListener("click", ()=> startGPS());
+el("resetPick").addEventListener("click", ()=> { state.picks = {club:null,shape:null,result:null}; saveAndRender(); });
+el("logBtn").addEventListener("click", ()=> logShot());
+el("undoBtn").addEventListener("click", ()=> undoShot());
 
-/** ------------ Map setup */
-const map = L.map("map", { zoomControl: false }).setView([36.24512, -93.10790], 17);
+// Init
+renderPickers();
+setHole(state.currentHole ?? 1);
+courseNameEl.textContent = `Course: ${COURSE.name}`;
+render();
 
-// Minimal base layer (open tiles). You can swap later.
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 20,
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
-
-const layers = {
-  green: L.layerGroup().addTo(map),
-  pin: L.layerGroup().addTo(map),
-  tees: L.layerGroup().addTo(map),
-  bunkers: L.layerGroup().addTo(map),
-  hazards: L.layerGroup().addTo(map),
-  ob: L.layerGroup().addTo(map),
-  fairway: L.layerGroup().addTo(map),
-  me: L.layerGroup().addTo(map),
-  edit: L.layerGroup().addTo(map),
-};
-
-const layerControl = L.control.layers(null, {
-  "Green": layers.green,
-  "Pin": layers.pin,
-  "Tees": layers.tees,
-  "Bunkers": layers.bunkers,
-  "Hazards": layers.hazards,
-  "OB": layers.ob
-}, { collapsed: true }).addTo(map);
-
-let meMarker = null;
-
-/** ------------ Initialize UI */
-initHoleSelect();
-renderChips();
-syncEditButton();
-renderHoleLayers();
-updateDistances();
-updateRecommendation();
-
-btnRecenter.addEventListener("click", () => {
-  if (state.pos) map.setView([state.pos.lat, state.pos.lng], Math.max(map.getZoom(), 18));
-});
-
-btnLog.addEventListener("click", () => openSheet());
-
-btnClose.addEventListener("click", () => closeSheet());
-btnCancel.addEventListener("click", () => closeSheet());
-
-btnEdit.addEventListener("click", () => {
-  state.editMode = !state.editMode;
-  saveJSON(LS_KEYS.editMode, state.editMode);
-  syncEditButton();
-  renderHoleLayers();
-});
-
-btnSave.addEventListener("click", () => saveShot());
-
-/** ------------ GPS */
-startGPS();
-
-/** ======================================================
-    Functions
-====================================================== */
-
-function initHoleSelect(){
-  holeSelect.innerHTML = "";
-  COURSE.holes.forEach(h => {
-    const opt = document.createElement("option");
-    opt.value = h.n;
-    opt.textContent = `${h.n}`;
-    holeSelect.appendChild(opt);
-  });
-  holeSelect.value = String(state.hole);
-  holeSelect.addEventListener("change", () => {
-    state.hole = Number(holeSelect.value);
-    renderHoleLayers();
-    updateDistances();
-    updateRecommendation();
-  });
-}
-
-function renderChips(){
-  clubChips.innerHTML = "";
-  shapeChips.innerHTML = "";
-  resultChips.innerHTML = "";
-
-  CLUBS.forEach(c => clubChips.appendChild(makeChip(c, "club")));
-  SHAPES.forEach(s => shapeChips.appendChild(makeChip(s, "shape")));
-  RESULTS.forEach(r => resultChips.appendChild(makeChip(r, "result")));
-}
-
-function makeChip(label, kind){
-  const el = document.createElement("div");
-  el.className = "chip";
-  el.textContent = label;
-  el.addEventListener("click", () => {
-    if (kind === "club") state.selClub = label;
-    if (kind === "shape") state.selShape = label;
-    if (kind === "result") state.selResult = label;
-    syncChips();
-  });
-  return el;
-}
-
-function syncChips(){
-  [...clubChips.children].forEach(ch => ch.classList.toggle("on", ch.textContent === state.selClub));
-  [...shapeChips.children].forEach(ch => ch.classList.toggle("on", ch.textContent === state.selShape));
-  [...resultChips.children].forEach(ch => ch.classList.toggle("on", ch.textContent === state.selResult));
-}
-
-function openSheet(){
-  // default a few sensible picks
-  if (!state.selClub) state.selClub = "8i";
-  if (!state.selShape) state.selShape = "Straight";
-  if (!state.selResult) state.selResult = "Center";
-  syncChips();
-  sheet.classList.add("open");
-}
-
-function closeSheet(){
-  sheet.classList.remove("open");
-}
-
-function syncEditButton(){
-  btnEdit.textContent = `Edit: ${state.editMode ? "On" : "Off"}`;
-  btnEdit.style.borderColor = state.editMode ? "rgba(209,161,75,.45)" : "rgba(233,230,220,.10)";
-}
-
-function renderHoleLayers(){
-  // clear all
-  Object.values(layers).forEach(lg => lg.clearLayers());
-
-  const hole = getHole();
-
-  // green
-  if (hole.green && hole.green.length >= 3){
-    L.polygon(hole.green.map(p => [p.lat,p.lng]), {
-      color: "rgba(63,191,127,.85)",
-      weight: 2,
-      fillColor: "rgba(63,191,127,.18)",
-      fillOpacity: 0.9
-    }).bindPopup(`<b>Green</b> — Hole ${hole.n}`).addTo(layers.green);
-  }
-
-  // pin
-  if (hole.pin){
-    L.circleMarker([hole.pin.lat, hole.pin.lng], {
-      radius: 7,
-      color: "rgba(209,161,75,.95)",
-      weight: 2,
-      fillColor: "rgba(209,161,75,.35)",
-      fillOpacity: 1
-    }).bindPopup(`<b>Pin</b> — Hole ${hole.n}`).addTo(layers.pin);
-  }
-
-  // features
-  drawFeatures(hole.features);
-
-  // edit mode: allow adding points for green polygon quickly (MVP editor)
-  if (state.editMode){
-    enableEditCapture(hole);
-  }
-
-  // keep me marker visible
-  if (state.pos) renderMe();
-}
-
-function drawFeatures(features){
-  // bunkers/hazards polygons
-  for (const b of (features.bunkers||[])){
-    L.polygon(b.poly.map(p => [p.lat,p.lng]), {
-      color: "rgba(209,161,75,.9)",
-      weight: 2,
-      fillColor: "rgba(209,161,75,.14)",
-      fillOpacity: 1
-    }).bindPopup(`<b>Bunker</b>: ${escapeHTML(b.name||"")}`).addTo(layers.bunkers);
-  }
-
-  for (const hz of (features.hazards||[])){
-    L.polygon(hz.poly.map(p => [p.lat,hzPoint(hz,p)]), {});
-  }
-
-  for (const hz of (features.hazards||[])){
-    L.polygon(hz.poly.map(p => [p.lat,p.lng]), {
-      color: "rgba(74,166,255,.9)",
-      weight: 2,
-      fillColor: "rgba(74,166,255,.12)",
-      fillOpacity: 1
-    }).bindPopup(`<b>Hazard</b>: ${escapeHTML(hz.name||"")}`).addTo(layers.hazards);
-  }
-
-  // OB lines
-  for (const ob of (features.ob||[])){
-    L.polyline(ob.line.map(p => [p.lat,p.lng]), {
-      color: "rgba(204,59,59,.95)",
-      weight: 3,
-      dashArray: "8,8"
-    }).bindPopup(`<b>OB</b>: ${escapeHTML(ob.name||"")}`).addTo(layers.ob);
-  }
-}
-
-function enableEditCapture(hole){
-  // Simple: click map to add green points; long-press isn't reliable across browsers.
-  // Controls appear as a small popup on first click.
-  let tempPoints = [];
-
-  const info = L.marker(map.getCenter(), { opacity: 0 }).addTo(layers.edit);
-
-  const help = L.popup({ closeButton:false, autoClose:false, closeOnClick:false })
-    .setLatLng(map.getCenter())
-    .setContent(`<div style="font-weight:800; margin-bottom:6px;">Edit Mode</div>
-      <div style="font-size:12px; color:#b7b1a2; line-height:1.25;">
-        Tap the map to add <b>green polygon points</b> for Hole ${hole.n}.<br/>
-        Use the buttons below to apply or clear.
-      </div>
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button id="applyGreen" style="height:38px; padding:0 10px; border-radius:12px; border:1px solid rgba(233,230,220,.12); background:rgba(16,20,30,.88); color:#e9e6dc; font-weight:800;">Save Green</button>
-        <button id="clearGreen" style="height:38px; padding:0 10px; border-radius:12px; border:1px solid rgba(233,230,220,.12); background:rgba(16,20,30,.88); color:#e9e6dc; font-weight:800;">Clear</button>
-      </div>`);
-  help.openOn(map);
-
-  function onMapClick(e){
-    tempPoints.push({ lat: e.latlng.lat, lng: e.latlng.lng });
-    renderTemp();
-  }
-
-  function renderTemp(){
-    layers.edit.clearLayers();
-    L.polyline(tempPoints.map(p => [p.lat,p.lng]), { color:"rgba(209,161,75,.9)", weight:3 }).addTo(layers.edit);
-    tempPoints.forEach(p => {
-      L.circleMarker([p.lat,p.lng], { radius:5, color:"rgba(209,161,75,.95)", weight:2, fillColor:"rgba(209,161,75,.35)", fillOpacity:1 }).addTo(layers.edit);
-    });
-  }
-
-  map.on("click", onMapClick);
-
-  setTimeout(() => {
-    const applyBtn = document.getElementById("applyGreen");
-    const clearBtn = document.getElementById("clearGreen");
-    if (applyBtn) applyBtn.onclick = () => {
-      if (tempPoints.length >= 3){
-        hole.green = tempPoints.slice();
-        saveCourseOverrides();
-        map.off("click", onMapClick);
-        renderHoleLayers();
-        updateDistances();
-        updateRecommendation();
-      }
-    };
-    if (clearBtn) clearBtn.onclick = () => {
-      tempPoints = [];
-      layers.edit.clearLayers();
-    };
-  }, 0);
-
-  // When edit mode toggles off, clean up click handler
-  const stopIfOff = setInterval(() => {
-    if (!state.editMode){
-      clearInterval(stopIfOff);
-      map.off("click", onMapClick);
-      try{ map.closePopup(help); }catch{}
-      layers.edit.clearLayers();
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      return {
+        currentHole: s.currentHole ?? 1,
+        gps: s.gps ?? { lat:null, lng:null, acc:null, ts:null },
+        shots: Array.isArray(s.shots) ? s.shots : [],
+        picks: s.picks ?? { club:null, shape:null, result:null },
+        // simple trends
+        trends: s.trends ?? { approach:{}, tee:{} }
+      };
     }
-  }, 300);
+  }catch(e){}
+  return {
+    currentHole: 1,
+    gps: { lat:null, lng:null, acc:null, ts:null },
+    shots: [],
+    picks: { club:null, shape:null, result:null },
+    trends: { approach:{}, tee:{} }
+  };
+}
+function saveState(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+function saveAndRender(){
+  saveState();
+  render();
+}
+
+function setHole(n){
+  if(n < 1) n = 18;
+  if(n > 18) n = 1;
+  state.currentHole = n;
+  saveAndRender();
+}
+
+function renderPickers(){
+  clubChipsEl.innerHTML = "";
+  shapeChipsEl.innerHTML = "";
+  resultChipsEl.innerHTML = "";
+
+  DEFAULT_CLUBS.forEach(c=>{
+    const b = makeChip(c, ()=> { state.picks.club = c; saveAndRender(); });
+    clubChipsEl.appendChild(b);
+  });
+  DEFAULT_SHAPES.forEach(s=>{
+    const b = makeChip(s, ()=> { state.picks.shape = s; saveAndRender(); }, true);
+    shapeChipsEl.appendChild(b);
+  });
+  DEFAULT_RESULTS.forEach(r=>{
+    const b = makeChip(r, ()=> { state.picks.result = r; saveAndRender(); }, true);
+    resultChipsEl.appendChild(b);
+  });
+}
+function makeChip(label, onClick, small=false){
+  const b = document.createElement("button");
+  b.className = "chip" + (small ? " small" : "");
+  b.textContent = label;
+  b.addEventListener("click", onClick);
+  return b;
 }
 
 function startGPS(){
-  if (!navigator.geolocation){
-    setGPSUI("bad", "Geolocation not supported", null);
+  if(!navigator.geolocation){
+    gpsPillEl.textContent = "GPS: not supported";
     return;
   }
-  state.watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      state.pos = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accM: pos.coords.accuracy
-      };
-      const accY = Math.round(mToY(pos.coords.accuracy));
-      setGPSUI("good", "Locked", accY);
-      renderMe();
-      updateDistances();
-      updateRecommendation();
-    },
-    (err) => {
-      setGPSUI("bad", err.message || "GPS error", null);
-    },
-    { enableHighAccuracy:true, maximumAge:1500, timeout:10000 }
-  );
+  gpsPillEl.textContent = "GPS: requesting…";
+  // one-shot fetch + optional watch
+  navigator.geolocation.getCurrentPosition(onGPS, onGPSError, { enableHighAccuracy:true, timeout:12000, maximumAge:2000 });
+  if(watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(onGPS, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:20000 });
+}
+function onGPS(pos){
+  state.gps = {
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude,
+    acc: pos.coords.accuracy,
+    ts: Date.now()
+  };
+  saveAndRender();
+}
+function onGPSError(err){
+  gpsPillEl.textContent = "GPS: blocked";
 }
 
-function renderMe(){
-  layers.me.clearLayers();
-  if (!state.pos) return;
-  const p = state.pos;
-  meMarker = L.circleMarker([p.lat,p.lng], {
-    radius: 8,
-    color: "rgba(74,166,255,.95)",
-    weight: 2,
-    fillColor: "rgba(74,166,255,.25)",
-    fillOpacity: 1
-  }).bindPopup(`<b>You</b><br/>Acc: ${Math.round(mToY(p.accM))}y`).addTo(layers.me);
+function render(){
+  // header
+  holeNumEl.textContent = state.currentHole;
+  const hole = COURSE.holes[state.currentHole - 1];
+  parTagEl.textContent = `Par ${hole.par}`;
+
+  // picks
+  clubPickedEl.textContent = state.picks.club ?? "—";
+  shapePickedEl.textContent = state.picks.shape ?? "—";
+  resultPickedEl.textContent = state.picks.result ?? "—";
+
+  // mark chips active
+  [...clubChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.club));
+  [...shapeChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.shape));
+  [...resultChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.result));
+
+  // GPS pill
+  if(state.gps.lat && state.gps.lng){
+    const ageSec = Math.max(0, Math.round((Date.now() - (state.gps.ts||Date.now()))/1000));
+    const acc = state.gps.acc ? Math.round(state.gps.acc) : null;
+    gpsPillEl.textContent = `GPS: OK${acc?` ±${acc}m`:``} • ${ageSec}s`;
+    lastUpdateEl.textContent = `Updated ${ageSec}s ago`;
+  }else{
+    gpsPillEl.textContent = "GPS: idle";
+    lastUpdateEl.textContent = "—";
+  }
+
+  // yardages
+  const yards = computeYards(state.gps, hole);
+  if(yards){
+    pinNoteEl.textContent = "From GPS to hole targets";
+    toPinEl.textContent = yards.pin;
+    toFrontEl.textContent = yards.front;
+    toCenterEl.textContent = yards.center;
+    toBackEl.textContent = yards.back;
+  }else{
+    pinNoteEl.textContent = hole.pin ? "Tap Locate to compute distances" : "Add pin coordinates for this hole";
+    toPinEl.textContent = "—";
+    toFrontEl.textContent = "—";
+    toCenterEl.textContent = "—";
+    toBackEl.textContent = "—";
+  }
+
+  // suggestions
+  const suggestion = suggestClub(yards?.center ?? null);
+  clubSuggestionEl.textContent = suggestion ? `Suggestion: ${suggestion}` : "Suggestion: —";
+  aimNudgeEl.textContent = `Nudge: ${computeNudge()}`;
+
+  // history
+  renderHistory();
+
+  // map
+  drawMap(hole, state.gps);
 }
 
-function setGPSUI(mode, text, accYards){
-  gpsDot.classList.remove("good","bad");
-  if (mode === "good") gpsDot.classList.add("good");
-  if (mode === "bad") gpsDot.classList.add("bad");
-  gpsStatus.textContent = text;
-  gpsAcc.textContent = (accYards == null) ? "—" : `${accYards}y`;
-}
-
-function updateDistances(){
-  const hole = getHole();
-  if (!state.pos){
-    dFront.textContent = dCenter.textContent = dBack.textContent = dPin.textContent = "—";
+function renderHistory(){
+  const shots = state.shots.slice(-3).reverse();
+  shotsCountEl.textContent = `${state.shots.length} shot${state.shots.length===1?"":"s"}`;
+  historyEl.innerHTML = "";
+  if(shots.length === 0){
+    const d = document.createElement("div");
+    d.className = "histItem";
+    d.innerHTML = `<span><b>No shots yet.</b> Log one to start trends.</span><span></span>`;
+    historyEl.appendChild(d);
     return;
   }
-  const me = state.pos;
-
-  // Determine targets:
-  // If targets explicitly set, use them.
-  // Else if green polygon exists, estimate front/center/back by bounds along N/S (simple but works).
-  const targets = computeTargets(hole);
-
-  dFront.textContent = targets.front ? `${Math.round(yardsBetween(me, targets.front))}` : "—";
-  dCenter.textContent = targets.center ? `${Math.round(yardsBetween(me, targets.center))}` : "—";
-  dBack.textContent = targets.back ? `${Math.round(yardsBetween(me, targets.back))}` : "—";
-  dPin.textContent = hole.pin ? `${Math.round(yardsBetween(me, hole.pin))}` : "—";
+  shots.forEach(s=>{
+    const d = document.createElement("div");
+    d.className = "histItem";
+    const time = new Date(s.t).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+    d.innerHTML = `<span><b>H${s.hole}</b> ${s.club} • ${s.shape} • ${s.result}</span><span>${time}</span>`;
+    historyEl.appendChild(d);
+  });
 }
 
-function updateRecommendation(){
-  // Needs GPS + a target distance
-  if (!state.pos){
-    recText.innerHTML = `<span class="dim">Turn on GPS to get live distances and suggestions.</span>`;
+function logShot(){
+  const {club,shape,result} = state.picks;
+  if(!club || !shape || !result){
+    // minimal feedback
+    aimNudgeEl.textContent = "Nudge: Pick club + shape + result first.";
     return;
   }
-
-  const hole = getHole();
-  const targets = computeTargets(hole);
-  const centerDist = targets.center ? yardsBetween(state.pos, targets.center) : null;
-
-  // Suggest club for center distance
-  let clubLine = `<span class="dim">Set a green (or center target) to get club suggestions.</span>`;
-  if (centerDist != null){
-    const club = suggestClub(centerDist);
-    clubLine = `Center ${Math.round(centerDist)}y → <span class="gold">${club}</span> <span class="dim">(today avg ${Math.round(getTodayYards(club))}y)</span>`;
-  }
-
-  // Miss trend nudge (last 6 shots, split tee vs approach by club)
-  const nudge = computeNudge();
-
-  recText.innerHTML = `
-    <div style="margin-bottom:6px;">${clubLine}</div>
-    <div class="dim">${nudge}</div>
-  `;
-}
-
-function saveShot(){
-  if (!state.selClub || !state.selShape || !state.selResult){
-    alert("Pick club, shape, and result.");
-    return;
-  }
-  if (!state.pos){
-    alert("GPS not locked yet.");
-    return;
-  }
-
-  const hole = getHole();
-  const targets = computeTargets(hole);
-  const toCenter = targets.center ? yardsBetween(state.pos, targets.center) : null;
+  const hole = state.currentHole;
+  const mode = isTeeClub(club) ? "tee" : "approach"; // simple heuristic
+  const holeObj = COURSE.holes[hole-1];
+  const yards = computeYards(state.gps, holeObj);
 
   const shot = {
     t: new Date().toISOString(),
-    hole: state.hole,
-    club: state.selClub,
-    shape: state.selShape,
-    result: state.selResult,
-    from: { lat: state.pos.lat, lng: state.pos.lng, accM: state.pos.accM },
-    toCenterYds: toCenter ? Math.round(toCenter) : null
+    hole,
+    club,
+    shape,
+    result,
+    mode,
+    gps: state.gps.lat ? { lat: state.gps.lat, lng: state.gps.lng, acc: state.gps.acc } : null,
+    toCenter: yards?.center ?? null
   };
 
   state.shots.push(shot);
-  saveJSON(LS_KEYS.shots, state.shots);
+  updateTrends(shot);
 
-  // Update "today distance" if this was an approach-ish shot and we have a center distance snapshot.
-  // This is a pragmatic MVP heuristic: you were standing at the ball, center distance is your "intended" yardage.
-  // We update club average toward that.
-  if (shot.toCenterYds && BASELINE_YARDS[shot.club]){
-    updateClubStat(shot.club, shot.toCenterYds);
-  }
-
-  closeSheet();
-  updateRecommendation();
+  // keep last selections for speed
+  saveAndRender();
 }
 
-function initClubStats(){
-  const stats = {};
-  for (const c of CLUBS){
-    const base = BASELINE_YARDS[c] ?? null;
-    stats[c] = { avg: base, n: 0 };
-  }
-  return stats;
+function undoShot(){
+  if(state.shots.length === 0) return;
+  state.shots.pop();
+  // For MVP, we won't recompute trends perfectly on undo; you can add that later.
+  saveAndRender();
 }
 
-function updateClubStat(club, yards){
-  const s = state.clubStats[club] || { avg: BASELINE_YARDS[club] ?? yards, n: 0 };
-  // Outlier reject: ignore if wildly off (helps when GPS is bad or you’re not at the ball)
-  const base = (s.avg ?? yards);
-  if (Math.abs(yards - base) > 60) return;
-
-  // Rolling average with mild smoothing
-  const n = Math.min(s.n + 1, 25);
-  const alpha = 1 / Math.min(n, 8); // stabilize after ~8 samples
-  const avg = (s.avg == null) ? yards : (s.avg * (1 - alpha) + yards * alpha);
-
-  state.clubStats[club] = { avg, n };
-  saveJSON(LS_KEYS.clubStats, state.clubStats);
-}
-
-function getTodayYards(club){
-  const s = state.clubStats[club];
-  return (s && s.avg != null) ? s.avg : (BASELINE_YARDS[club] ?? 0);
-}
-
-function suggestClub(distYds){
-  // pick club with avg closest to distance (simple MVP)
-  let best = "8i";
-  let bestDelta = Infinity;
-  for (const c of CLUBS){
-    const y = getTodayYards(c);
-    if (!y) continue;
-    const d = Math.abs(y - distYds);
-    if (d < bestDelta){
-      bestDelta = d;
-      best = c;
-    }
-  }
-
-  // If your last few are "Short" often, bias one club stronger
-  const shortBias = recentBias("Short");
-  if (shortBias >= 0.5){
-    const idx = CLUBS.indexOf(best);
-    if (idx > 0) best = CLUBS[Math.max(0, idx - 1)]; // stronger club is earlier in list here (Driver->LW). This ordering isn’t perfect but good enough for MVP.
-  }
-  return best;
+function updateTrends(shot){
+  const bucket = (shot.mode === "tee") ? state.trends.tee : state.trends.approach;
+  bucket[shot.result] = (bucket[shot.result] || 0) + 1;
 }
 
 function computeNudge(){
-  const recent = state.shots.slice(-6);
-  if (recent.length < 2){
-    return "Log a couple shots and I’ll start spotting trends (right/left/short/long).";
-  }
-  const counts = { Left:0, Right:0, Short:0, Long:0, Hazard:0, OB:0 };
-  recent.forEach(s => { if (counts[s.result] != null) counts[s.result]++; });
+  // Simple: look at approach trend for left/right/short/long
+  const t = state.trends.approach || {};
+  const right = t["Right"]||0;
+  const left  = t["Left"]||0;
+  const short = t["Short"]||0;
+  const long  = t["Long"]||0;
+  const hazard = (t["Hazard"]||0) + (t["OB"]||0);
 
-  const total = recent.length;
-  const right = counts.Right/total;
-  const left = counts.Left/total;
-  const short = counts.Short/total;
-  const long = counts.Long/total;
+  const total = right+left+short+long+hazard + (t["Center"]||0) + (t["Green"]||0);
+  if(total < 3) return "Log a few shots to unlock trends.";
 
-  if (right >= 0.45) return "Trend: misses drifting <span class='blue'>right</span>. Aim more left-center and commit to a start line.";
-  if (left >= 0.45) return "Trend: misses drifting <span class='blue'>left</span>. Favor right-center and avoid over-turning it.";
-  if (short >= 0.45) return "Trend: misses coming up <span class='blue'>short</span>. Take one more club or commit to full finish.";
-  if (long >= 0.45) return "Trend: misses going <span class='blue'>long</span>. Club down into front/middle and don’t chase back pins.";
-  if ((counts.OB + counts.Hazard)/total >= 0.34) return "Risk is biting today. Play center targets and let pars stack.";
-  return "No strong trend yet. Keep logging — I’ll adapt as the round develops.";
+  // prioritize safety warnings
+  if(hazard >= 2) return "You’ve found trouble twice — play one club safer / aim wider.";
+
+  const max = Math.max(right,left,short,long);
+  if(max === right && right >= left+2) return "Approaches trending right → favor left-center.";
+  if(max === left  && left  >= right+2) return "Approaches trending left → favor right-center.";
+  if(max === short && short >= long+2) return "Coming up short → take one more club when pin is back.";
+  if(max === long  && long  >= short+2) return "Going long → favor front/center, flight it down.";
+  return "Trends mixed → aim center-green and commit to tempo.";
 }
 
-function recentBias(resultName){
-  const recent = state.shots.slice(-6);
-  if (!recent.length) return 0;
-  return recent.filter(s => s.result === resultName).length / recent.length;
-}
-
-function computeTargets(hole){
-  // If explicit targets exist, use them
-  if (hole.targets?.front && hole.targets?.center && hole.targets?.back){
-    return hole.targets;
-  }
-
-  // If green polygon exists, approximate front/center/back by bounds along latitude (north/south).
-  if (hole.green && hole.green.length >= 3){
-    const pts = hole.green;
-    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-    for (const p of pts){
-      minLat = Math.min(minLat, p.lat);
-      maxLat = Math.max(maxLat, p.lat);
-      minLng = Math.min(minLng, p.lng);
-      maxLng = Math.max(maxLng, p.lng);
+function suggestClub(distanceToCenter){
+  if(!distanceToCenter) return null;
+  // pick closest baseline yardage
+  let best = null;
+  let bestDiff = Infinity;
+  for(const [club,yd] of Object.entries(BASELINE_YARDS)){
+    const diff = Math.abs(yd - distanceToCenter);
+    if(diff < bestDiff){
+      bestDiff = diff;
+      best = club;
     }
-    const center = { lat: (minLat + maxLat)/2, lng: (minLng + maxLng)/2 };
-    // Assume “front” is the lower latitude (south) edge. This isn’t perfect for every orientation, but is MVP-friendly.
-    const front = { lat: minLat, lng: (minLng + maxLng)/2 };
-    const back  = { lat: maxLat, lng: (minLng + maxLng)/2 };
-    return { front, center, back };
   }
-
-  // else nothing
-  return { front:null, center:null, back:null };
+  if(!best) return null;
+  return `${best} to center (${distanceToCenter}y)`;
 }
 
-function getHole(){
-  return COURSE.holes[state.hole - 1];
+function isTeeClub(club){
+  return (club === "D" || club === "3W" || club === "5W" || club === "H");
 }
 
-/** ------------ KML/Google workflow support (later)
- * You said you might use Google Maps to generate polygons.
- * Best format to aim for is GeoJSON.
- * For MVP, you'll paste arrays into COURSE.holes[n].green and features.
+/** Yardages:
+ *  For MVP:
+ *  - Pin required.
+ *  - If green polygon exists, we estimate front/back by polygon bounds projected to distance.
+ *    (Simple approximation: use nearest/farthest green vertex distance.)
  */
+function computeYards(gps, hole){
+  if(!gps?.lat || !gps?.lng) return null;
+  if(!hole?.pin) return null;
 
-/** ------------ Persistence for course overrides */
-function saveCourseOverrides(){
-  const overrides = COURSE.holes.map(h => ({
-    n: h.n,
-    pin: h.pin,
-    green: h.green,
-    targets: h.targets,
-    features: h.features
+  const pin = Math.round(haversineYards(gps.lat, gps.lng, hole.pin.lat, hole.pin.lng));
+  let front = pin, center = pin, back = pin;
+
+  if(Array.isArray(hole.green) && hole.green.length >= 3){
+    const dists = hole.green.map(p => haversineYards(gps.lat, gps.lng, p.lat, p.lng));
+    // crude: front = nearest vertex, back = farthest vertex
+    front = Math.round(Math.min(...dists));
+    back  = Math.round(Math.max(...dists));
+    center = pin; // you can replace with centroid distance later
+  }
+
+  return { pin, front, center, back };
+}
+
+// Haversine distance in yards
+function haversineYards(lat1, lon1, lat2, lon2){
+  const R = 6371000; // meters
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
+  const a =
+    Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
+    Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const meters = R * c;
+  return meters * 1.0936133; // yards
+}
+
+/** =========================
+ *  Map drawing (simple viewer)
+ *  =========================
+ *  We draw in "local space" by fitting pin+green polygons+you into view.
+ *  This is NOT a real map projection. It’s a handy on-course overlay viewer.
+ */
+function drawMap(hole, gps){
+  // resize canvas to match CSS size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(rect.width * devicePixelRatio));
+  canvas.height = Math.max(1, Math.floor(rect.height * devicePixelRatio));
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0,0,rect.width,rect.height);
+
+  // Collect points to fit
+  const pts = [];
+  if(hole?.pin) pts.push(hole.pin);
+  if(Array.isArray(hole?.green)) hole.green.forEach(p=>pts.push(p));
+  if(gps?.lat && gps?.lng) pts.push({lat:gps.lat,lng:gps.lng});
+
+  if(pts.length === 0){
+    // placeholder text
+    ctx.fillStyle = "rgba(233,230,220,0.55)";
+    ctx.font = "700 14px system-ui";
+    ctx.fillText("Add pin/green data + enable GPS to see overlays.", 14, 26);
+    return;
+  }
+
+  // Convert lat/lng to local x/y (equirectangular around mean lat)
+  const meanLat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+  const kx = Math.cos(meanLat * Math.PI/180);
+
+  const xy = pts.map(p=>({
+    x: p.lng * kx,
+    y: p.lat
   }));
-  saveJSON(LS_KEYS.courseOverrides, overrides);
-}
-function applyCourseOverrides(){
-  const overrides = loadJSON(LS_KEYS.courseOverrides, null);
-  if (!overrides) return;
-  for (const o of overrides){
-    const h = COURSE.holes[o.n - 1];
-    if (!h) continue;
-    // Only override if values exist
-    if (o.pin) h.pin = o.pin;
-    if (o.green) h.green = o.green;
-    if (o.targets) h.targets = o.targets;
-    if (o.features) h.features = o.features;
+
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  xy.forEach(p=>{
+    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+  });
+
+  // padding
+  const pad = 0.00025; // tweak
+  minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
+
+  const W = rect.width, H = rect.height;
+  const scale = Math.min(W/(maxX-minX), H/(maxY-minY));
+  const tx = (x)=> (x - minX)*scale;
+  const ty = (y)=> (maxY - y)*scale;
+
+  // Draw green polygon
+  if(Array.isArray(hole?.green) && hole.green.length >= 3){
+    ctx.beginPath();
+    hole.green.forEach((p,i)=>{
+      const x = tx(p.lng*kx), y = ty(p.lat);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = "rgba(63,191,127,0.16)";
+    ctx.strokeStyle = "rgba(63,191,127,0.75)";
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Pin
+  if(hole?.pin){
+    const x = tx(hole.pin.lng*kx), y = ty(hole.pin.lat);
+    drawDot(x,y, 6, "rgba(209,161,75,0.95)", "rgba(0,0,0,0.45)");
+    ctx.fillStyle = "rgba(233,230,220,0.75)";
+    ctx.font = "800 12px system-ui";
+    ctx.fillText("PIN", x+10, y-8);
+  }
+
+  // You
+  if(gps?.lat && gps?.lng){
+    const x = tx(gps.lng*kx), y = ty(gps.lat);
+    drawDot(x,y, 7, "rgba(74,166,255,0.95)", "rgba(0,0,0,0.45)");
+    ctx.fillStyle = "rgba(233,230,220,0.75)";
+    ctx.font = "800 12px system-ui";
+    ctx.fillText("YOU", x+10, y-8);
   }
 }
 
-/** ------------ Utils */
-function saveJSON(key, value){
-  localStorage.setItem(key, JSON.stringify(value));
+function drawDot(x,y,r, fill, outline){
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 3;
+  ctx.stroke();
 }
-function loadJSON(key, fallback){
-  try{
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  }catch{
-    return fallback;
-  }
-}
-function escapeHTML(s){
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
-function toRad(d){ return d * Math.PI/180; }
-function metersBetween(a,b){
-  // Haversine
-  const R = 6371000;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
-  const sin1 = Math.sin(dLat/2), sin2 = Math.sin(dLng/2);
-  const h = sin1*sin1 + Math.cos(lat1)*Math.cos(lat2)*sin2*sin2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
-}
-function yardsBetween(a,b){ return metersBetween(a,b) * 1.0936133; }
-function mToY(m){ return m * 1.0936133; }
 </script>
 </body>
 </html>
