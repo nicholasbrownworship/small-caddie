@@ -3,7 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Mini Caddie — Saturday MVP</title>
+  <title>Mini Caddie — Saturday MVP (Satellite Edit)</title>
+
+  <!-- Leaflet (map + editing clicks) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
   <style>
     :root{
       --bg:#0b0e14;
@@ -30,7 +44,7 @@
       min-height:100vh;
     }
     .wrap{
-      max-width: 780px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 12px 12px 24px;
       padding-bottom: calc(24px + env(safe-area-inset-bottom));
@@ -38,14 +52,14 @@
     .topbar{
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 50;
       backdrop-filter: blur(10px);
       background: linear-gradient(to bottom, rgba(11,14,20,0.92), rgba(11,14,20,0.60));
       border-bottom: 1px solid rgba(255,255,255,0.08);
       padding: 10px 10px 12px;
       border-radius: 0 0 18px 18px;
     }
-    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
     .pill{
       display:inline-flex; align-items:center; gap:8px;
       padding: 8px 10px;
@@ -55,6 +69,7 @@
       color: var(--muted);
       font-size: 13px;
       user-select:none;
+      white-space:nowrap;
     }
     .btn{
       border:0; cursor:pointer;
@@ -66,12 +81,20 @@
       font-weight: 650;
       letter-spacing: .2px;
       box-shadow: none;
+      user-select:none;
+      white-space:nowrap;
     }
     .btn:active{ transform: translateY(1px); }
     .btn.primary{
       background: linear-gradient(180deg, rgba(209,161,75,0.95), rgba(209,161,75,0.65));
       border-color: rgba(209,161,75,0.55);
       color: #140f06;
+    }
+    .btn.warn{
+      background: linear-gradient(180deg, rgba(74,166,255,0.95), rgba(74,166,255,0.55));
+      border-color: rgba(74,166,255,0.35);
+      color:#07101b;
+      font-weight: 800;
     }
     .btn.ghost{
       background: transparent;
@@ -80,6 +103,7 @@
     }
     .holeCtl{
       display:flex; align-items:center; gap:8px;
+      min-width: 260px;
     }
     .holeNum{
       font-size: 18px;
@@ -94,15 +118,14 @@
       background: rgba(74,166,255,0.16);
       border: 1px solid rgba(74,166,255,0.28);
       color: rgba(232,242,255,0.92);
+      white-space:nowrap;
     }
-
     .grid{
       display:grid;
       grid-template-columns: 1fr;
       gap: 12px;
       margin-top: 12px;
     }
-
     .card{
       background: var(--panel);
       border: 1px solid rgba(255,255,255,0.10);
@@ -114,6 +137,7 @@
       padding: 12px 14px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       display:flex; align-items:center; justify-content:space-between; gap:10px;
+      flex-wrap:wrap;
     }
     .card .hd h2{
       margin:0; font-size: 14px; letter-spacing: .2px;
@@ -137,7 +161,6 @@
     .pinBig .label{ color: var(--muted); font-size: 13px; font-weight: 700; }
     .pinBig .val{ font-size: 52px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
     .pinBig .unit{ color: var(--muted); font-weight: 700; font-size: 14px; }
-
     .fcb{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
@@ -151,13 +174,8 @@
     }
     .mini .k{ color: var(--muted); font-size: 12px; font-weight: 750; }
     .mini .v{ font-size: 22px; font-weight: 900; margin-top: 2px; }
-    .subline{ margin-top: 8px; color: var(--dim); font-size: 12px; }
+    .subline{ margin-top: 8px; color: var(--dim); font-size: 12px; line-height: 1.35; }
 
-    .nudge{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
     .nudgeBox{
       padding: 12px 14px;
       border-radius: 16px;
@@ -167,31 +185,34 @@
     .nudgeBox .t{ font-weight: 900; font-size: 14px; color: rgba(232,242,255,0.95); }
     .nudgeBox .d{ margin-top: 4px; color: rgba(232,242,255,0.78); font-size: 13px; }
 
+    /* Leaflet map container */
     .mapWrap{
       position: relative;
-      height: 320px;
-      background:
-        linear-gradient(0deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06)),
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px),
-        repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px);
+      height: 360px;
       border-radius: 16px;
       overflow:hidden;
       border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
     }
-    canvas{ width:100%; height:100%; display:block; }
+    #map{
+      position:absolute; inset:0;
+    }
     .mapLegend{
       position:absolute; left:10px; top:10px;
       display:flex; gap:8px; flex-wrap:wrap;
       max-width: calc(100% - 20px);
+      z-index: 500;
+      pointer-events:none;
     }
     .tag{
       display:inline-flex; align-items:center; gap:7px;
       padding: 6px 8px;
       border-radius: 999px;
-      background: rgba(0,0,0,0.35);
+      background: rgba(0,0,0,0.45);
       border: 1px solid rgba(255,255,255,0.10);
       font-size: 12px;
       color: var(--muted);
+      backdrop-filter: blur(6px);
     }
     .dot{ width:8px; height:8px; border-radius:99px; background: var(--muted); }
     .dot.green{ background: var(--green); }
@@ -207,6 +228,7 @@
     .picker .title{
       display:flex; align-items:center; justify-content:space-between;
       margin-bottom: 8px;
+      gap:10px;
     }
     .picker .title span{
       color: var(--muted);
@@ -248,7 +270,6 @@
       text-align:center;
       margin-top: 10px;
     }
-
     .history{
       display:flex; gap:10px; flex-direction:column;
     }
@@ -262,11 +283,22 @@
       font-size: 13px;
     }
     .histItem b{ color: var(--ink); }
-    @media (min-width: 760px){
-      .grid{ grid-template-columns: 1.2fr 1fr; align-items:start; }
+
+    .smallBtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+    /* Leaflet tweaks (keep it clean) */
+    .leaflet-control-attribution{ display:none; }
+    .leaflet-container{
+      background: #0a0d12;
+      font: inherit;
+    }
+
+    @media (min-width: 900px){
+      .grid{ grid-template-columns: 1.25fr 1fr; align-items:start; }
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="topbar">
@@ -274,18 +306,28 @@
         <div class="holeCtl">
           <button class="btn ghost" id="holePrev" aria-label="Previous hole">◀︎</button>
           <div>
-            <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               <div class="holeNum">Hole <span id="holeNum">1</span></div>
               <div class="parTag" id="parTag">Par 4</div>
+              <div class="pill" id="editPill" style="display:none">EDIT ON</div>
             </div>
             <div style="margin-top:2px;color:var(--dim);font-size:12px" id="courseName">Course: Sample Course</div>
           </div>
           <button class="btn ghost" id="holeNext" aria-label="Next hole">▶︎</button>
         </div>
 
-        <div style="display:flex;gap:10px;align-items:center">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           <div class="pill" id="gpsPill">GPS: idle</div>
           <button class="btn" id="gpsBtn">Locate</button>
+
+          <button class="btn" id="editBtn">Edit: Off</button>
+          <button class="btn" id="editTargetBtn">Target: Green</button>
+          <button class="btn warn" id="editCloseBtn" title="Close and save the current polygon draft">Close</button>
+          <button class="btn" id="editUndoBtn" title="Undo last point (draft) or delete last polygon (if no draft)">Undo</button>
+          <button class="btn" id="editClearBtn" title="Clear this layer for the current hole">Clear</button>
+
+          <button class="btn" id="exportBtn" title="Copy this hole's JSON to clipboard">Export</button>
+          <button class="btn" id="importBtn" title="Paste JSON to replace this hole">Import</button>
         </div>
       </div>
     </div>
@@ -294,14 +336,18 @@
       <div class="card">
         <div class="hd">
           <h2>Yardages</h2>
-          <div class="pill" id="lastUpdate">—</div>
+          <div class="smallBtns">
+            <div class="pill" id="lastUpdate">—</div>
+            <button class="btn ghost" id="centerOnYouBtn" title="Center map on your GPS">Center on You</button>
+            <button class="btn ghost" id="centerOnHoleBtn" title="Center map on the hole">Center on Hole</button>
+          </div>
         </div>
         <div class="bd">
           <div class="yards">
             <div class="pinBig">
               <div>
                 <div class="label">TO PIN</div>
-                <div class="subline" id="pinNote">Select hole data to enable</div>
+                <div class="subline" id="pinNote">Add pin coordinates for this hole (Edit → Target: Pin)</div>
               </div>
               <div style="text-align:right">
                 <div class="val" id="toPin">—</div>
@@ -324,24 +370,23 @@
               </div>
             </div>
 
-            <div class="nudge">
-              <div class="nudgeBox">
-                <div class="t" id="clubSuggestion">Suggestion: —</div>
-                <div class="d" id="aimNudge">Nudge: —</div>
-              </div>
+            <div class="nudgeBox">
+              <div class="t" id="clubSuggestion">Suggestion: —</div>
+              <div class="d" id="aimNudge">Nudge: —</div>
             </div>
 
             <div class="mapWrap">
-              <canvas id="map"></canvas>
+              <div id="map"></div>
               <div class="mapLegend">
                 <div class="tag"><span class="dot blue"></span>You</div>
                 <div class="tag"><span class="dot gold"></span>Pin</div>
-                <div class="tag"><span class="dot green"></span>Green</div>
+                <div class="tag"><span class="dot green"></span>Green/Fairway</div>
                 <div class="tag"><span class="dot red"></span>Hazard/OB</div>
               </div>
             </div>
-            <div class="subline">
-              Saturday MVP: this map is a simple overlay viewer. You’ll handwire polygons later (Google Maps → JSON).
+
+            <div class="subline" id="editHelp">
+              Tip: Turn <b>Edit: On</b>, select a <b>Target</b>, then tap points on the satellite map. Use <b>Close</b> to save a polygon. Use <b>Export</b> when a hole is done.
             </div>
           </div>
         </div>
@@ -388,23 +433,19 @@
   </div>
 
 <script>
-/** =========================
- *  Saturday MVP — Data Model
- *  =========================
- *  - Add real hole/polygon data later.
- *  - For now, only pin is required for yardages.
- *  - Green polygon optional; hazards/OB optional.
- */
+/* =========================
+   Storage keys
+========================= */
+const STORE_KEY = "miniCaddie_state_v1";         // shots + UI
+const EDIT_KEY  = "miniCaddie_courseEdits_v1";   // hole geometry
 
-const STORE_KEY = "miniCaddie_v1";
-
+/* =========================
+   Pickers & baselines
+========================= */
 const DEFAULT_CLUBS = ["D","3W","5W","H","4i","5i","6i","7i","8i","9i","PW","GW","SW","LW"];
 const DEFAULT_SHAPES = ["Straight","Fade","Draw","High","Low","Punch"];
 const DEFAULT_RESULTS = ["Center","Left","Right","Short","Long","Fairway","Green","Hazard","OB"];
 
-// Baseline carry (yards) — tweak to your numbers.
-// The tool will compute "today avg" over time from logged distances if you add landing points later.
-// For Saturday MVP we use baseline until you extend it.
 const BASELINE_YARDS = {
   "D": 240, "3W": 220, "5W": 205, "H": 190,
   "4i": 180, "5i": 170, "6i": 160, "7i": 150,
@@ -412,39 +453,70 @@ const BASELINE_YARDS = {
   "SW": 90, "LW": 75
 };
 
+/* =========================
+   Course skeleton
+   - Geometry is stored per hole:
+     pin: {lat,lng}
+     green/fairway/tee/bunker/water/ob/hazard: [ [ {lat,lng}... ], [ ... ] ]
+========================= */
 const COURSE = {
   id: "sample",
   name: "Sample Course (replace me)",
   holes: Array.from({length:18}).map((_,i)=>({
     n: i+1,
     par: [4,4,3,4,5,4,3,4,5,4,4,3,4,5,4,3,4,5][i] || 4,
-    // Replace with real pin coords per hole
-    pin: null, // {lat,lng}
-    // Optional polygons
-    green: [],        // [{lat,lng},...]
-    bunkers: [],      // array of polygons
-    water: [],        // array of polygons
-    ob: [],           // array of polylines/polygons
-    tees: []          // array of polygons
+    pin: null,
+    green: [],
+    fairway: [],
+    tee: [],
+    bunker: [],
+    water: [],
+    ob: [],
+    hazard: []
   }))
 };
 
-// Example: add one pin so you can test yardages immediately.
-// Replace with your course data.
-COURSE.holes[0].pin = { lat: 36.0620, lng: -93.1270 }; // dummy
-COURSE.holes[0].green = [
-  { lat: 36.06205, lng: -93.12690 },
-  { lat: 36.06215, lng: -93.12705 },
-  { lat: 36.06198, lng: -93.12718 },
-  { lat: 36.06190, lng: -93.12698 }
+// Optional: set a default start view so the map isn't blank.
+// Replace with your course area (or let GPS center you).
+let DEFAULT_MAP_CENTER = { lat: 36.0620, lng: -93.1270 };
+
+/* =========================
+   Edit mode targets
+========================= */
+const EDIT_TARGETS = [
+  { key:"pin",     label:"Pin",     type:"point" },
+  { key:"green",   label:"Green",   type:"poly"  },
+  { key:"fairway", label:"Fairway", type:"poly"  },
+  { key:"tee",     label:"Tee",     type:"poly"  },
+  { key:"bunker",  label:"Bunker",  type:"poly"  },
+  { key:"water",   label:"Water",   type:"poly"  },
+  { key:"hazard",  label:"Hazard",  type:"poly"  },
+  { key:"ob",      label:"OB",      type:"poly"  }
 ];
 
-// App state
+/* =========================
+   App state (shots + UI)
+========================= */
 let state = loadState();
 let watchId = null;
 
-// DOM
+/* =========================
+   Edit state + geometry storage
+========================= */
+let edit = {
+  on: false,
+  target: "green",
+  draft: [] // array of {lat,lng}
+};
+
+let courseEdits = loadCourseEdits();
+applyCourseEditsToCourse();
+
+/* =========================
+   DOM
+========================= */
 const el = (id)=>document.getElementById(id);
+
 const holeNumEl = el("holeNum");
 const parTagEl = el("parTag");
 const courseNameEl = el("courseName");
@@ -470,24 +542,133 @@ const resultPickedEl = el("resultPicked");
 
 const historyEl = el("history");
 const shotsCountEl = el("shotsCount");
+const shotModeEl = el("shotMode");
 
-const canvas = el("map");
-const ctx = canvas.getContext("2d");
+const editBtn = el("editBtn");
+const editTargetBtn = el("editTargetBtn");
+const editCloseBtn = el("editCloseBtn");
+const editUndoBtn = el("editUndoBtn");
+const editClearBtn = el("editClearBtn");
+const editPill = el("editPill");
 
-// Controls
+const exportBtn = el("exportBtn");
+const importBtn = el("importBtn");
+
+const centerOnYouBtn = el("centerOnYouBtn");
+const centerOnHoleBtn = el("centerOnHoleBtn");
+
+/* =========================
+   Controls
+========================= */
 el("holePrev").addEventListener("click", ()=> setHole(state.currentHole - 1));
 el("holeNext").addEventListener("click", ()=> setHole(state.currentHole + 1));
 el("gpsBtn").addEventListener("click", ()=> startGPS());
+
 el("resetPick").addEventListener("click", ()=> { state.picks = {club:null,shape:null,result:null}; saveAndRender(); });
 el("logBtn").addEventListener("click", ()=> logShot());
 el("undoBtn").addEventListener("click", ()=> undoShot());
 
-// Init
+editBtn.addEventListener("click", ()=>{
+  edit.on = !edit.on;
+  if(!edit.on) edit.draft = [];
+  syncEditUI();
+  render();
+});
+
+editTargetBtn.addEventListener("click", ()=>{
+  const idx = EDIT_TARGETS.findIndex(t=>t.key === edit.target);
+  const next = EDIT_TARGETS[(idx + 1) % EDIT_TARGETS.length];
+  edit.target = next.key;
+  edit.draft = [];
+  syncEditUI();
+  render();
+});
+
+editCloseBtn.addEventListener("click", ()=>{
+  if(!edit.on) return;
+  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+  if(!meta || meta.type !== "poly") return;
+
+  if(edit.draft.length < 3){
+    aimNudgeEl.textContent = "Nudge: Need at least 3 points to close a polygon.";
+    return;
+  }
+
+  const hole = currentHole();
+  hole[edit.target] = hole[edit.target] || [];
+  hole[edit.target].push(edit.draft.map(p=>({lat:p.lat,lng:p.lng})));
+  edit.draft = [];
+
+  persistCurrentHoleEdits();
+  redrawHoleLayers();
+  render();
+});
+
+editUndoBtn.addEventListener("click", ()=>{
+  if(!edit.on) return;
+  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+  const hole = currentHole();
+
+  if(meta?.type === "point"){
+    hole.pin = null;
+    persistCurrentHoleEdits();
+    redrawHoleLayers();
+    render();
+    return;
+  }
+
+  // poly:
+  if(edit.draft.length){
+    edit.draft.pop();
+    redrawDraft();
+    return;
+  }
+
+  // if no draft, delete last saved polygon on that layer
+  if(Array.isArray(hole[edit.target]) && hole[edit.target].length){
+    hole[edit.target].pop();
+    persistCurrentHoleEdits();
+    redrawHoleLayers();
+    render();
+  }
+});
+
+editClearBtn.addEventListener("click", ()=>{
+  if(!edit.on) return;
+  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+  const hole = currentHole();
+
+  if(meta?.type === "point"){
+    hole.pin = null;
+  } else {
+    hole[edit.target] = [];
+    edit.draft = [];
+  }
+
+  persistCurrentHoleEdits();
+  redrawHoleLayers();
+  render();
+});
+
+exportBtn.addEventListener("click", ()=> exportHoleJSON());
+importBtn.addEventListener("click", ()=> importHoleJSON());
+
+centerOnYouBtn.addEventListener("click", ()=> centerMapOnYou());
+centerOnHoleBtn.addEventListener("click", ()=> centerMapOnHole());
+
+/* =========================
+   Init
+========================= */
 renderPickers();
-setHole(state.currentHole ?? 1);
 courseNameEl.textContent = `Course: ${COURSE.name}`;
+syncEditUI();
+initMap();
+setHole(state.currentHole ?? 1);
 render();
 
+/* =========================
+   State persistence
+========================= */
 function loadState(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
@@ -498,7 +679,6 @@ function loadState(){
         gps: s.gps ?? { lat:null, lng:null, acc:null, ts:null },
         shots: Array.isArray(s.shots) ? s.shots : [],
         picks: s.picks ?? { club:null, shape:null, result:null },
-        // simple trends
         trends: s.trends ?? { approach:{}, tee:{} }
       };
     }
@@ -519,29 +699,93 @@ function saveAndRender(){
   render();
 }
 
+/* =========================
+   Course geometry persistence
+========================= */
+function loadCourseEdits(){
+  try{
+    const raw = localStorage.getItem(EDIT_KEY);
+    if(!raw) return {};
+    const data = JSON.parse(raw);
+    return (data && typeof data === "object") ? data : {};
+  }catch(e){
+    return {};
+  }
+}
+function saveCourseEdits(){
+  localStorage.setItem(EDIT_KEY, JSON.stringify(courseEdits));
+}
+function persistCurrentHoleEdits(){
+  const hole = currentHole();
+  courseEdits[hole.n] = {
+    pin: hole.pin || null,
+    green: hole.green || [],
+    fairway: hole.fairway || [],
+    tee: hole.tee || [],
+    bunker: hole.bunker || [],
+    water: hole.water || [],
+    hazard: hole.hazard || [],
+    ob: hole.ob || []
+  };
+  saveCourseEdits();
+}
+function applyCourseEditsToCourse(){
+  for(const [hn, data] of Object.entries(courseEdits)){
+    const idx = Number(hn) - 1;
+    const hole = COURSE.holes[idx];
+    if(!hole || !data) continue;
+
+    hole.pin = data.pin || hole.pin || null;
+
+    hole.green = Array.isArray(data.green) ? data.green : hole.green;
+    hole.fairway = Array.isArray(data.fairway) ? data.fairway : (hole.fairway || []);
+    hole.tee = Array.isArray(data.tee) ? data.tee : (hole.tee || []);
+    hole.bunker = Array.isArray(data.bunker) ? data.bunker : (hole.bunker || []);
+    hole.water = Array.isArray(data.water) ? data.water : (hole.water || []);
+    hole.hazard = Array.isArray(data.hazard) ? data.hazard : (hole.hazard || []);
+    hole.ob = Array.isArray(data.ob) ? data.ob : (hole.ob || []);
+  }
+}
+
+/* =========================
+   Hole helpers
+========================= */
+function currentHole(){
+  return COURSE.holes[state.currentHole - 1];
+}
 function setHole(n){
   if(n < 1) n = 18;
   if(n > 18) n = 1;
   state.currentHole = n;
-  saveAndRender();
+  edit.draft = [];
+  saveState();
+  syncEditUI();
+  redrawHoleLayers();
+  render();
+}
+function syncEditUI(){
+  editBtn.textContent = `Edit: ${edit.on ? "On" : "Off"}`;
+  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+  editTargetBtn.textContent = `Target: ${meta ? meta.label : edit.target}`;
+  editPill.style.display = edit.on ? "inline-flex" : "none";
 }
 
+/* =========================
+   Pickers
+========================= */
 function renderPickers(){
   clubChipsEl.innerHTML = "";
   shapeChipsEl.innerHTML = "";
   resultChipsEl.innerHTML = "";
 
   DEFAULT_CLUBS.forEach(c=>{
-    const b = makeChip(c, ()=> { state.picks.club = c; saveAndRender(); });
-    clubChipsEl.appendChild(b);
+    clubChipsEl.appendChild(makeChip(c, ()=> { state.picks.club = c; saveAndRender(); }));
   });
   DEFAULT_SHAPES.forEach(s=>{
-    const b = makeChip(s, ()=> { state.picks.shape = s; saveAndRender(); }, true);
-    shapeChipsEl.appendChild(b);
+    shapeChipsEl.appendChild(makeChip(s, ()=> { state.picks.shape = s; saveAndRender(); }, true));
   });
   DEFAULT_RESULTS.forEach(r=>{
-    const b = makeChip(r, ()=> { state.picks.result = r; saveAndRender(); }, true);
-    resultChipsEl.appendChild(b);
+    resultChipsEl.appendChild(makeChip(r, ()=> { state.picks.result = r; saveAndRender(); }, true));
   });
 }
 function makeChip(label, onClick, small=false){
@@ -552,13 +796,16 @@ function makeChip(label, onClick, small=false){
   return b;
 }
 
+/* =========================
+   GPS
+========================= */
 function startGPS(){
   if(!navigator.geolocation){
     gpsPillEl.textContent = "GPS: not supported";
     return;
   }
   gpsPillEl.textContent = "GPS: requesting…";
-  // one-shot fetch + optional watch
+
   navigator.geolocation.getCurrentPosition(onGPS, onGPSError, { enableHighAccuracy:true, timeout:12000, maximumAge:2000 });
   if(watchId !== null) navigator.geolocation.clearWatch(watchId);
   watchId = navigator.geolocation.watchPosition(onGPS, ()=>{}, { enableHighAccuracy:true, maximumAge:2000, timeout:20000 });
@@ -571,23 +818,25 @@ function onGPS(pos){
     ts: Date.now()
   };
   saveAndRender();
+  updateYouMarker();
 }
-function onGPSError(err){
+function onGPSError(){
   gpsPillEl.textContent = "GPS: blocked";
 }
 
+/* =========================
+   Render main UI
+========================= */
 function render(){
-  // header
-  holeNumEl.textContent = state.currentHole;
-  const hole = COURSE.holes[state.currentHole - 1];
+  const hole = currentHole();
+
+  holeNumEl.textContent = hole.n;
   parTagEl.textContent = `Par ${hole.par}`;
 
-  // picks
   clubPickedEl.textContent = state.picks.club ?? "—";
   shapePickedEl.textContent = state.picks.shape ?? "—";
   resultPickedEl.textContent = state.picks.result ?? "—";
 
-  // mark chips active
   [...clubChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.club));
   [...shapeChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.shape));
   [...resultChipsEl.children].forEach(ch=> ch.classList.toggle("on", ch.textContent === state.picks.result));
@@ -598,12 +847,12 @@ function render(){
     const acc = state.gps.acc ? Math.round(state.gps.acc) : null;
     gpsPillEl.textContent = `GPS: OK${acc?` ±${acc}m`:``} • ${ageSec}s`;
     lastUpdateEl.textContent = `Updated ${ageSec}s ago`;
-  }else{
+  } else {
     gpsPillEl.textContent = "GPS: idle";
     lastUpdateEl.textContent = "—";
   }
 
-  // yardages
+  // Yardages
   const yards = computeYards(state.gps, hole);
   if(yards){
     pinNoteEl.textContent = "From GPS to hole targets";
@@ -611,26 +860,62 @@ function render(){
     toFrontEl.textContent = yards.front;
     toCenterEl.textContent = yards.center;
     toBackEl.textContent = yards.back;
-  }else{
-    pinNoteEl.textContent = hole.pin ? "Tap Locate to compute distances" : "Add pin coordinates for this hole";
+  } else {
+    pinNoteEl.textContent = hole.pin ? "Tap Locate to compute distances" : "Add pin coordinates (Edit → Target: Pin)";
     toPinEl.textContent = "—";
     toFrontEl.textContent = "—";
     toCenterEl.textContent = "—";
     toBackEl.textContent = "—";
   }
 
-  // suggestions
   const suggestion = suggestClub(yards?.center ?? null);
   clubSuggestionEl.textContent = suggestion ? `Suggestion: ${suggestion}` : "Suggestion: —";
   aimNudgeEl.textContent = `Nudge: ${computeNudge()}`;
 
-  // history
-  renderHistory();
+  shotModeEl.textContent = `Mode: ${isTeeClub(state.picks.club) ? "Tee" : "Approach"}`;
 
-  // map
-  drawMap(hole, state.gps);
+  renderHistory();
+  redrawDraft(); // keep draft visible while editing
 }
 
+/* =========================
+   Shot log
+========================= */
+function logShot(){
+  const {club,shape,result} = state.picks;
+  if(!club || !shape || !result){
+    aimNudgeEl.textContent = "Nudge: Pick club + shape + result first.";
+    return;
+  }
+  const hole = state.currentHole;
+  const mode = isTeeClub(club) ? "tee" : "approach";
+  const holeObj = currentHole();
+  const yards = computeYards(state.gps, holeObj);
+
+  const shot = {
+    t: new Date().toISOString(),
+    hole,
+    club,
+    shape,
+    result,
+    mode,
+    gps: state.gps.lat ? { lat: state.gps.lat, lng: state.gps.lng, acc: state.gps.acc } : null,
+    toCenter: yards?.center ?? null
+  };
+
+  state.shots.push(shot);
+  updateTrends(shot);
+  saveAndRender();
+}
+function undoShot(){
+  if(state.shots.length === 0) return;
+  state.shots.pop();
+  saveAndRender();
+}
+function updateTrends(shot){
+  const bucket = (shot.mode === "tee") ? state.trends.tee : state.trends.approach;
+  bucket[shot.result] = (bucket[shot.result] || 0) + 1;
+}
 function renderHistory(){
   const shots = state.shots.slice(-3).reverse();
   shotsCountEl.textContent = `${state.shots.length} shot${state.shots.length===1?"":"s"}`;
@@ -651,50 +936,10 @@ function renderHistory(){
   });
 }
 
-function logShot(){
-  const {club,shape,result} = state.picks;
-  if(!club || !shape || !result){
-    // minimal feedback
-    aimNudgeEl.textContent = "Nudge: Pick club + shape + result first.";
-    return;
-  }
-  const hole = state.currentHole;
-  const mode = isTeeClub(club) ? "tee" : "approach"; // simple heuristic
-  const holeObj = COURSE.holes[hole-1];
-  const yards = computeYards(state.gps, holeObj);
-
-  const shot = {
-    t: new Date().toISOString(),
-    hole,
-    club,
-    shape,
-    result,
-    mode,
-    gps: state.gps.lat ? { lat: state.gps.lat, lng: state.gps.lng, acc: state.gps.acc } : null,
-    toCenter: yards?.center ?? null
-  };
-
-  state.shots.push(shot);
-  updateTrends(shot);
-
-  // keep last selections for speed
-  saveAndRender();
-}
-
-function undoShot(){
-  if(state.shots.length === 0) return;
-  state.shots.pop();
-  // For MVP, we won't recompute trends perfectly on undo; you can add that later.
-  saveAndRender();
-}
-
-function updateTrends(shot){
-  const bucket = (shot.mode === "tee") ? state.trends.tee : state.trends.approach;
-  bucket[shot.result] = (bucket[shot.result] || 0) + 1;
-}
-
+/* =========================
+   Recommendations
+========================= */
 function computeNudge(){
-  // Simple: look at approach trend for left/right/short/long
   const t = state.trends.approach || {};
   const right = t["Right"]||0;
   const left  = t["Left"]||0;
@@ -704,9 +949,7 @@ function computeNudge(){
 
   const total = right+left+short+long+hazard + (t["Center"]||0) + (t["Green"]||0);
   if(total < 3) return "Log a few shots to unlock trends.";
-
-  // prioritize safety warnings
-  if(hazard >= 2) return "You’ve found trouble twice — play one club safer / aim wider.";
+  if(hazard >= 2) return "You’ve found trouble twice — play safer / aim wider.";
 
   const max = Math.max(right,left,short,long);
   if(max === right && right >= left+2) return "Approaches trending right → favor left-center.";
@@ -715,10 +958,8 @@ function computeNudge(){
   if(max === long  && long  >= short+2) return "Going long → favor front/center, flight it down.";
   return "Trends mixed → aim center-green and commit to tempo.";
 }
-
 function suggestClub(distanceToCenter){
   if(!distanceToCenter) return null;
-  // pick closest baseline yardage
   let best = null;
   let bestDiff = Infinity;
   for(const [club,yd] of Object.entries(BASELINE_YARDS)){
@@ -731,17 +972,15 @@ function suggestClub(distanceToCenter){
   if(!best) return null;
   return `${best} to center (${distanceToCenter}y)`;
 }
-
 function isTeeClub(club){
   return (club === "D" || club === "3W" || club === "5W" || club === "H");
 }
 
-/** Yardages:
- *  For MVP:
- *  - Pin required.
- *  - If green polygon exists, we estimate front/back by polygon bounds projected to distance.
- *    (Simple approximation: use nearest/farthest green vertex distance.)
- */
+/* =========================
+   Yardages
+   - Pin required.
+   - If green exists (first polygon), estimate front/back by nearest/farthest vertex.
+========================= */
 function computeYards(gps, hole){
   if(!gps?.lat || !gps?.lng) return null;
   if(!hole?.pin) return null;
@@ -749,18 +988,18 @@ function computeYards(gps, hole){
   const pin = Math.round(haversineYards(gps.lat, gps.lng, hole.pin.lat, hole.pin.lng));
   let front = pin, center = pin, back = pin;
 
-  if(Array.isArray(hole.green) && hole.green.length >= 3){
-    const dists = hole.green.map(p => haversineYards(gps.lat, gps.lng, p.lat, p.lng));
-    // crude: front = nearest vertex, back = farthest vertex
+  const greenPoly = (Array.isArray(hole.green) && hole.green.length && Array.isArray(hole.green[0]))
+    ? hole.green[0] : null;
+
+  if(greenPoly && greenPoly.length >= 3){
+    const dists = greenPoly.map(p => haversineYards(gps.lat, gps.lng, p.lat, p.lng));
     front = Math.round(Math.min(...dists));
     back  = Math.round(Math.max(...dists));
-    center = pin; // you can replace with centroid distance later
+    center = pin;
   }
 
   return { pin, front, center, back };
 }
-
-// Haversine distance in yards
 function haversineYards(lat1, lon1, lat2, lon2){
   const R = 6371000; // meters
   const toRad = d => d * Math.PI / 180;
@@ -772,103 +1011,223 @@ function haversineYards(lat1, lon1, lat2, lon2){
     Math.sin(dLon/2)*Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   const meters = R * c;
-  return meters * 1.0936133; // yards
+  return meters * 1.0936133;
 }
 
-/** =========================
- *  Map drawing (simple viewer)
- *  =========================
- *  We draw in "local space" by fitting pin+green polygons+you into view.
- *  This is NOT a real map projection. It’s a handy on-course overlay viewer.
- */
-function drawMap(hole, gps){
-  // resize canvas to match CSS size
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.max(1, Math.floor(rect.width * devicePixelRatio));
-  canvas.height = Math.max(1, Math.floor(rect.height * devicePixelRatio));
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  ctx.clearRect(0,0,rect.width,rect.height);
+/* =========================
+   Leaflet Map
+========================= */
+let map;
+let baseLayer;
+let holeLayersGroup;
+let draftLayer;
+let youMarker = null;
+let pinMarker = null;
 
-  // Collect points to fit
-  const pts = [];
-  if(hole?.pin) pts.push(hole.pin);
-  if(Array.isArray(hole?.green)) hole.green.forEach(p=>pts.push(p));
-  if(gps?.lat && gps?.lng) pts.push({lat:gps.lat,lng:gps.lng});
+function initMap(){
+  map = L.map("map", {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([DEFAULT_MAP_CENTER.lat, DEFAULT_MAP_CENTER.lng], 18);
 
-  if(pts.length === 0){
-    // placeholder text
-    ctx.fillStyle = "rgba(233,230,220,0.55)";
-    ctx.font = "700 14px system-ui";
-    ctx.fillText("Add pin/green data + enable GPS to see overlays.", 14, 26);
+  // Satellite imagery (Esri World Imagery)
+  baseLayer = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 21 }
+  ).addTo(map);
+
+  holeLayersGroup = L.layerGroup().addTo(map);
+  draftLayer = L.layerGroup().addTo(map);
+
+  map.on("click", (e)=>{
+    if(!edit.on) return;
+
+    const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+    const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
+
+    const hole = currentHole();
+
+    if(meta?.type === "point"){
+      hole.pin = ll;
+      persistCurrentHoleEdits();
+      redrawHoleLayers();
+      render();
+      return;
+    }
+
+    // polygon draft
+    edit.draft.push(ll);
+    redrawDraft();
+  });
+
+  // initial draw
+  redrawHoleLayers();
+  redrawDraft();
+}
+
+function centerMapOnYou(){
+  if(!state.gps?.lat || !state.gps?.lng) return;
+  map.setView([state.gps.lat, state.gps.lng], Math.max(map.getZoom(), 18));
+}
+function centerMapOnHole(){
+  const hole = currentHole();
+  const anchor = hole.pin || (hole.green?.[0]?.[0]) || DEFAULT_MAP_CENTER;
+  map.setView([anchor.lat, anchor.lng], Math.max(map.getZoom(), 18));
+}
+
+function updateYouMarker(){
+  if(!map) return;
+  if(!state.gps?.lat || !state.gps?.lng) return;
+
+  const ll = [state.gps.lat, state.gps.lng];
+  if(!youMarker){
+    youMarker = L.circleMarker(ll, {
+      radius: 7,
+      color: "#0a0d12",
+      weight: 3,
+      fillColor: "#4aa6ff",
+      fillOpacity: 0.95
+    }).addTo(holeLayersGroup);
+  }else{
+    youMarker.setLatLng(ll);
+  }
+}
+
+function redrawHoleLayers(){
+  if(!map) return;
+  holeLayersGroup.clearLayers();
+
+  // re-add markers last (so they sit on top)
+  const hole = currentHole();
+
+  // polys
+  drawPolyLayer(hole.fairway, { color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.10 });
+  drawPolyLayer(hole.tee,     { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.10 });
+  drawPolyLayer(hole.green,   { color:"#3fbf7f", weight:2, fillColor:"#3fbf7f", fillOpacity:0.16 });
+  drawPolyLayer(hole.bunker,  { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.08 });
+  drawPolyLayer(hole.water,   { color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.18 });
+  drawPolyLayer(hole.hazard,  { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.10 });
+  drawPolyLayer(hole.ob,      { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.06, dashArray:"6 6" });
+
+  // pin
+  if(hole.pin){
+    pinMarker = L.circleMarker([hole.pin.lat, hole.pin.lng], {
+      radius: 7,
+      color: "#0a0d12",
+      weight: 3,
+      fillColor: "#d1a14b",
+      fillOpacity: 0.95
+    }).addTo(holeLayersGroup);
+  }else{
+    pinMarker = null;
+  }
+
+  // you
+  updateYouMarker();
+  redrawDraft();
+}
+
+function drawPolyLayer(layer, style){
+  if(!Array.isArray(layer) || layer.length === 0) return;
+  layer.forEach(poly=>{
+    if(Array.isArray(poly) && poly.length >= 3){
+      L.polygon(poly.map(p=>[p.lat,p.lng]), style).addTo(holeLayersGroup);
+    }
+  });
+}
+
+function redrawDraft(){
+  if(!map) return;
+  draftLayer.clearLayers();
+  if(!edit.on) return;
+
+  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
+  if(!meta || meta.type !== "poly") return;
+
+  if(edit.draft.length === 0) return;
+
+  // show draft polyline + points
+  L.polyline(edit.draft.map(p=>[p.lat,p.lng]), {
+    color:"#ffffff",
+    weight: 2,
+    opacity: 0.85
+  }).addTo(draftLayer);
+
+  edit.draft.forEach(p=>{
+    L.circleMarker([p.lat,p.lng], {
+      radius: 4,
+      color:"#0a0d12",
+      weight:2,
+      fillColor:"#ffffff",
+      fillOpacity:0.9
+    }).addTo(draftLayer);
+  });
+}
+
+/* =========================
+   Export/Import hole JSON
+========================= */
+function exportHoleJSON(){
+  const hole = currentHole();
+  const data = {
+    n: hole.n,
+    par: hole.par,
+    pin: hole.pin,
+    green: hole.green,
+    fairway: hole.fairway,
+    tee: hole.tee,
+    bunker: hole.bunker,
+    water: hole.water,
+    hazard: hole.hazard,
+    ob: hole.ob
+  };
+  const text = JSON.stringify(data, null, 2);
+  copyToClipboard(text);
+  aimNudgeEl.textContent = "Nudge: Hole JSON copied to clipboard.";
+}
+
+function importHoleJSON(){
+  const raw = prompt("Paste hole JSON (will replace this hole’s shapes):");
+  if(!raw) return;
+
+  let data;
+  try{
+    data = JSON.parse(raw);
+  }catch(e){
+    alert("Invalid JSON.");
     return;
   }
 
-  // Convert lat/lng to local x/y (equirectangular around mean lat)
-  const meanLat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
-  const kx = Math.cos(meanLat * Math.PI/180);
+  const hole = currentHole();
+  // Only overwrite known fields
+  hole.pin = data.pin || null;
+  hole.green = Array.isArray(data.green) ? data.green : [];
+  hole.fairway = Array.isArray(data.fairway) ? data.fairway : [];
+  hole.tee = Array.isArray(data.tee) ? data.tee : [];
+  hole.bunker = Array.isArray(data.bunker) ? data.bunker : [];
+  hole.water = Array.isArray(data.water) ? data.water : [];
+  hole.hazard = Array.isArray(data.hazard) ? data.hazard : [];
+  hole.ob = Array.isArray(data.ob) ? data.ob : [];
 
-  const xy = pts.map(p=>({
-    x: p.lng * kx,
-    y: p.lat
-  }));
-
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  xy.forEach(p=>{
-    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
-    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
-  });
-
-  // padding
-  const pad = 0.00025; // tweak
-  minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
-
-  const W = rect.width, H = rect.height;
-  const scale = Math.min(W/(maxX-minX), H/(maxY-minY));
-  const tx = (x)=> (x - minX)*scale;
-  const ty = (y)=> (maxY - y)*scale;
-
-  // Draw green polygon
-  if(Array.isArray(hole?.green) && hole.green.length >= 3){
-    ctx.beginPath();
-    hole.green.forEach((p,i)=>{
-      const x = tx(p.lng*kx), y = ty(p.lat);
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.closePath();
-    ctx.fillStyle = "rgba(63,191,127,0.16)";
-    ctx.strokeStyle = "rgba(63,191,127,0.75)";
-    ctx.lineWidth = 2;
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // Pin
-  if(hole?.pin){
-    const x = tx(hole.pin.lng*kx), y = ty(hole.pin.lat);
-    drawDot(x,y, 6, "rgba(209,161,75,0.95)", "rgba(0,0,0,0.45)");
-    ctx.fillStyle = "rgba(233,230,220,0.75)";
-    ctx.font = "800 12px system-ui";
-    ctx.fillText("PIN", x+10, y-8);
-  }
-
-  // You
-  if(gps?.lat && gps?.lng){
-    const x = tx(gps.lng*kx), y = ty(gps.lat);
-    drawDot(x,y, 7, "rgba(74,166,255,0.95)", "rgba(0,0,0,0.45)");
-    ctx.fillStyle = "rgba(233,230,220,0.75)";
-    ctx.font = "800 12px system-ui";
-    ctx.fillText("YOU", x+10, y-8);
-  }
+  persistCurrentHoleEdits();
+  edit.draft = [];
+  redrawHoleLayers();
+  render();
+  aimNudgeEl.textContent = "Nudge: Imported hole geometry.";
 }
 
-function drawDot(x,y,r, fill, outline){
-  ctx.beginPath();
-  ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fillStyle = fill;
-  ctx.fill();
-  ctx.strokeStyle = outline;
-  ctx.lineWidth = 3;
-  ctx.stroke();
+async function copyToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    // fallback
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
 }
 </script>
 </body>
