@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Mini Caddie — Diagram + Map (Manual YOU Marker)</title>
+  <title>Mini Caddie — Saturday MVP (Edit + Manual You)</title>
 
-  <!-- Leaflet (Map mode only) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <!-- Leaflet (Map view) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 
   <style>
     :root{
@@ -16,12 +16,10 @@
       --ink:#e9e6dc;
       --muted:#b7b1a2;
       --dim:#7d776b;
-
       --gold:#d1a14b;
       --green:#3fbf7f;
       --red:#cc3b3b;
       --blue:#4aa6ff;
-
       --radius:18px;
       --shadow: 0 18px 50px rgba(0,0,0,0.35);
     }
@@ -37,7 +35,7 @@
       min-height:100vh;
     }
     .wrap{
-      max-width: 980px;
+      max-width: 1020px;
       margin: 0 auto;
       padding: 12px 12px 24px;
       padding-bottom: calc(24px + env(safe-area-inset-bottom));
@@ -71,34 +69,28 @@
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 12px;
       padding: 10px 12px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: .2px;
       user-select:none;
       white-space:nowrap;
     }
     .btn:active{ transform: translateY(1px); }
-    .btn.primary{
-      background: linear-gradient(180deg, rgba(209,161,75,0.95), rgba(209,161,75,0.65));
-      border-color: rgba(209,161,75,0.55);
-      color: #140f06;
-    }
-    .btn.warn{
-      background: linear-gradient(180deg, rgba(74,166,255,0.95), rgba(74,166,255,0.55));
-      border-color: rgba(74,166,255,0.35);
-      color:#07101b;
-      font-weight: 850;
-    }
     .btn.ghost{
       background: transparent;
       border-color: rgba(255,255,255,0.14);
       color: var(--muted);
     }
-
+    .btn.warn{
+      background: linear-gradient(180deg, rgba(74,166,255,0.95), rgba(74,166,255,0.55));
+      border-color: rgba(74,166,255,0.35);
+      color:#07101b;
+      font-weight: 950;
+    }
     .holeCtl{ display:flex; align-items:center; gap:8px; min-width: 260px; }
-    .holeNum{ font-size: 18px; font-weight: 900; color: var(--ink); }
+    .holeNum{ font-size: 18px; font-weight: 950; color: var(--ink); }
     .parTag{
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       padding: 4px 8px;
       border-radius: 999px;
       background: rgba(74,166,255,0.16);
@@ -106,7 +98,9 @@
       color: rgba(232,242,255,0.92);
       white-space:nowrap;
     }
-
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
     .grid{
       display:grid;
       grid-template-columns: 1fr;
@@ -129,7 +123,7 @@
     .card .hd h2{
       margin:0; font-size: 14px; letter-spacing: .2px;
       color: var(--muted);
-      font-weight: 800;
+      font-weight: 900;
     }
     .card .bd{ padding: 14px; }
 
@@ -167,7 +161,6 @@
     .dot.red{ background: var(--red); }
     .dot.blue{ background: var(--blue); }
 
-    .subline{ margin-top: 10px; color: var(--dim); font-size: 12px; line-height: 1.35; }
     .panel{
       padding: 12px 14px;
       border-radius: 16px;
@@ -177,21 +170,18 @@
       font-size: 13px;
       line-height:1.35;
     }
-    .panel b{ color: var(--ink); }
     .panel .title{ font-weight: 950; color: var(--ink); margin-bottom:6px; }
-    .controls{
-      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
-    }
     .divider{ height:1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+    .subline{ margin-top: 10px; color: var(--dim); font-size: 12px; line-height: 1.35; }
 
-    /* Leaflet label styling */
-    .you-label{
+    /* Leaflet tooltip label styling */
+    .map-label{
       background: rgba(0,0,0,0.55);
       border: 1px solid rgba(255,255,255,0.14);
-      color: rgba(233,230,220,0.9);
-      padding: 2px 6px;
+      color: rgba(233,230,220,0.92);
+      padding: 2px 7px;
       border-radius: 999px;
-      font-weight: 900;
+      font-weight: 950;
       font-size: 11px;
       letter-spacing: .3px;
     }
@@ -201,10 +191,9 @@
     }
   </style>
 </head>
-
 <body>
-<div class="wrap">
 
+<div class="wrap">
   <div class="topbar">
     <div class="row">
       <div class="holeCtl">
@@ -230,9 +219,8 @@
 
         <button class="btn" id="youBtn">You: Off</button>
         <button class="btn" id="centerYouBtn">Center You</button>
-
-        <button class="btn" id="fitBtn">Fit</button>
         <button class="btn" id="centerPinBtn">Center Pin</button>
+        <button class="btn" id="fitBtn">Fit</button>
 
         <button class="btn" id="exportBtn">Export</button>
         <button class="btn" id="importBtn">Import</button>
@@ -244,10 +232,9 @@
     <div class="card">
       <div class="hd">
         <h2>Hole View</h2>
-        <div class="pill" id="modePill">Manual marker — no GPS</div>
+        <div class="pill" id="modePill">No GPS required — manual YOU</div>
       </div>
       <div class="bd">
-
         <div class="mapWrap">
           <div id="map"></div>
           <canvas id="diagram"></canvas>
@@ -261,9 +248,8 @@
         </div>
 
         <div class="subline" id="helpLine">
-          Switch to Map view for satellite editing. Switch to Diagram for offline “hole picture”.
+          Diagram = offline “hole picture.” Map = satellite editing (when you have tiles).
         </div>
-
       </div>
     </div>
 
@@ -275,9 +261,7 @@
       <div class="bd">
         <div class="panel">
           <div class="title" id="statusTitle">Ready</div>
-          <div id="statusText">
-            To locate yourself without GPS: tap <b>You: On</b>, then tap the map/diagram to drop a blue YOU marker.
-          </div>
+          <div id="statusText">Tap <b>You: On</b> then tap the view to place YOUR marker (no GPS).</div>
           <div class="divider"></div>
           <div id="layerCount">—</div>
         </div>
@@ -287,313 +271,719 @@
 </div>
 
 <script>
-/* =========================
-   Storage
-========================= */
-const EDIT_KEY = "miniCaddie_courseEdits_v4";
-const UI_KEY   = "miniCaddie_ui_v4";
+document.addEventListener("DOMContentLoaded", () => {
 
-/* =========================
-   Course skeleton
-========================= */
-const COURSE = {
-  id: "sample",
-  name: "Sample Course (replace me)",
-  holes: Array.from({length:18}).map((_,i)=>({
-    n: i+1,
-    par: [4,4,3,4,5,4,3,4,5,4,4,3,4,5,4,3,4,5][i] || 4,
-    pin: null,
-    green: [],
-    fairway: [],
-    tee: [],
-    bunker: [],
-    water: [],
-    hazard: [],
-    ob: [],
-    you: null,        // <-- manual YOU marker
-    youMode: false
-  }))
-};
+  /* =========================
+     Storage
+  ========================= */
+  const EDIT_KEY = "miniCaddie_courseEdits_v5";
+  const UI_KEY   = "miniCaddie_ui_v5";
 
-const EDIT_TARGETS = [
-  { key:"pin",     label:"Pin",     type:"point" },
-  { key:"green",   label:"Green",   type:"poly"  },
-  { key:"fairway", label:"Fairway", type:"poly"  },
-  { key:"tee",     label:"Tee",     type:"poly"  },
-  { key:"bunker",  label:"Bunker",  type:"poly"  },
-  { key:"water",   label:"Water",   type:"poly"  },
-  { key:"hazard",  label:"Hazard",  type:"poly"  },
-  { key:"ob",      label:"OB",      type:"poly"  }
-];
+  /* =========================
+     Course skeleton
+  ========================= */
+  const COURSE = {
+    id: "sample",
+    name: "Sample Course (replace me)",
+    holes: Array.from({length:18}).map((_,i)=>({
+      n: i+1,
+      par: [4,4,3,4,5,4,3,4,5,4,4,3,4,5,4,3,4,5][i] || 4,
+      pin: manualNull(),
+      you: manualNull(),
+      green: [], fairway: [], tee: [], bunker: [], water: [], hazard: [], ob: []
+    }))
+  };
 
-/* =========================
-   UI State
-========================= */
-let ui = loadUIState();
-let viewMode = ui.viewMode || "diagram";  // diagram | map
-let edit = { on:false, target:"green", draft:[] };
+  function manualNull(){ return null; }
 
-/* =========================
-   Load edits
-========================= */
-let courseEdits = loadCourseEdits();
-applyCourseEditsToCourse();
+  const TARGETS = [
+    { key:"pin",     label:"Pin",     type:"point" },
+    { key:"green",   label:"Green",   type:"poly"  },
+    { key:"fairway", label:"Fairway", type:"poly"  },
+    { key:"tee",     label:"Tee",     type:"poly"  },
+    { key:"bunker",  label:"Bunker",  type:"poly"  },
+    { key:"water",   label:"Water",   type:"poly"  },
+    { key:"hazard",  label:"Hazard",  type:"poly"  },
+    { key:"ob",      label:"OB",      type:"poly"  }
+  ];
 
-/* =========================
-   DOM
-========================= */
-const el = (id)=>document.getElementById(id);
+  /* =========================
+     UI + Edit state
+  ========================= */
+  let ui = loadUI();
+  let viewMode = ui.viewMode || "diagram";      // diagram | map
+  let editOn = false;
+  let youMode = false;
+  let targetKey = "green";
+  let draft = []; // draft polygon points
 
-const holeNumEl = el("holeNum");
-const parTagEl = el("parTag");
-const courseNameEl = el("courseName");
+  /* =========================
+     DOM
+  ========================= */
+  const $ = (id)=>document.getElementById(id);
 
-const viewBtn = el("viewBtn");
-const editBtn = el("editBtn");
-const targetBtn = el("targetBtn");
-const closeBtn = el("closeBtn");
-const undoBtn = el("undoBtn");
-const clearBtn = el("clearBtn");
+  const holeNumEl = $("holeNum");
+  const parTagEl = $("parTag");
+  const courseNameEl = $("courseName");
 
-const youBtn = el("youBtn");
-const centerYouBtn = el("centerYouBtn");
+  const viewBtn = $("viewBtn");
+  const editBtn = $("editBtn");
+  const targetBtn = $("targetBtn");
+  const closeBtn = $("closeBtn");
+  const undoBtn = $("undoBtn");
+  const clearBtn = $("clearBtn");
 
-const fitBtn = el("fitBtn");
-const centerPinBtn = el("centerPinBtn");
-const exportBtn = el("exportBtn");
-const importBtn = el("importBtn");
+  const youBtn = $("youBtn");
+  const centerYouBtn = $("centerYouBtn");
+  const centerPinBtn = $("centerPinBtn");
+  const fitBtn = $("fitBtn");
 
-const editPill = el("editPill");
+  const exportBtn = $("exportBtn");
+  const importBtn = $("importBtn");
 
-const holeSummary = el("holeSummary");
-const statusTitle = el("statusTitle");
-const statusText  = el("statusText");
-const layerCount  = el("layerCount");
+  const editPill = $("editPill");
+  const holeSummary = $("holeSummary");
+  const statusTitle = $("statusTitle");
+  const statusText  = $("statusText");
+  const layerCount  = $("layerCount");
 
-const mapDiv = el("map");
-const canvas = el("diagram");
-const ctx = canvas.getContext("2d");
+  const mapDiv = $("map");
+  const canvas = $("diagram");
+  const ctx = canvas.getContext("2d");
 
-/* =========================
-   Hole nav
-========================= */
-el("holePrev").addEventListener("click", ()=> setHole(ui.currentHole - 1));
-el("holeNext").addEventListener("click", ()=> setHole(ui.currentHole + 1));
+  /* =========================
+     Load edits -> apply to course
+  ========================= */
+  const edits = loadEdits();
+  applyEdits();
 
-/* =========================
-   View toggle
-========================= */
-viewBtn.addEventListener("click", ()=>{
-  viewMode = (viewMode === "diagram") ? "map" : "diagram";
-  ui.viewMode = viewMode;
-  saveUIState();
-  syncView();
-  redrawAll();
-});
+  /* =========================
+     Map (lazy init)
+  ========================= */
+  let map = null;
+  let mapReady = false;
+  let holeLayer = null;
+  let draftLayer = null;
 
-/* =========================
-   Edit controls
-========================= */
-editBtn.addEventListener("click", ()=>{
-  edit.on = !edit.on;
-  if(!edit.on) edit.draft = [];
-  syncEditUI();
-  redrawAll();
-});
-
-targetBtn.addEventListener("click", ()=>{
-  const idx = EDIT_TARGETS.findIndex(t=>t.key === edit.target);
-  const next = EDIT_TARGETS[(idx + 1) % EDIT_TARGETS.length];
-  edit.target = next.key;
-  edit.draft = [];
-  syncEditUI();
-  redrawAll();
-});
-
-closeBtn.addEventListener("click", ()=>{
-  if(!edit.on) return;
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-  if(!meta || meta.type !== "poly") return;
-  if(edit.draft.length < 3){
-    toast("Need at least 3 points to close.");
-    return;
-  }
-  const hole = currentHole();
-  hole[edit.target].push(edit.draft.map(p=>({lat:p.lat,lng:p.lng})));
-  edit.draft = [];
-  persistCurrentHoleEdits();
-  redrawAll();
-});
-
-undoBtn.addEventListener("click", ()=>{
-  const hole = currentHole();
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-
-  if(edit.on && meta?.type === "poly" && edit.draft.length){
-    edit.draft.pop();
-    redrawAll();
-    return;
-  }
-
-  if(meta?.type === "point"){
-    hole.pin = null;
-    persistCurrentHoleEdits();
-    redrawAll();
-    return;
-  }
-
-  if(Array.isArray(hole[edit.target]) && hole[edit.target].length){
-    hole[edit.target].pop();
-    persistCurrentHoleEdits();
-    redrawAll();
-  }
-});
-
-clearBtn.addEventListener("click", ()=>{
-  if(!edit.on){
-    toast("Turn Edit On to clear a layer.");
-    return;
-  }
-  const hole = currentHole();
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-
-  if(meta?.type === "point"){
-    hole.pin = null;
-  }else{
-    hole[edit.target] = [];
-    edit.draft = [];
-  }
-  persistCurrentHoleEdits();
-  redrawAll();
-});
-
-/* =========================
-   YOU marker controls (manual)
-========================= */
-youBtn.addEventListener("click", ()=>{
-  const hole = currentHole();
-  hole.youMode = !hole.youMode;
-  youBtn.textContent = `You: ${hole.youMode ? "On" : "Off"}`;
-  toast(hole.youMode ? "Tap to place YOU marker." : "YOU placement off.");
-});
-
-centerYouBtn.addEventListener("click", ()=>{
-  const hole = currentHole();
-  if(!hole.you){ toast("No YOU marker set."); return; }
-  if(viewMode === "map"){
-    ensureMapReady();
-    map.setView([hole.you.lat, hole.you.lng], Math.max(map.getZoom(), 18));
-  }else{
-    toast("YOU is marked in blue.");
-    redrawDiagram();
-  }
-});
-
-/* =========================
-   Fit / Center Pin
-========================= */
-fitBtn.addEventListener("click", ()=>{
-  if(viewMode === "map"){
-    centerMapOnHole(true);
-  }else{
-    redrawDiagram();
-    toast("Fitted diagram.");
-  }
-});
-
-centerPinBtn.addEventListener("click", ()=>{
-  const hole = currentHole();
-  if(!hole.pin){ toast("No pin set."); return; }
-  if(viewMode === "map"){
-    ensureMapReady();
-    map.setView([hole.pin.lat, hole.pin.lng], Math.max(map.getZoom(), 18));
-  }else{
-    toast("Pin is marked in gold.");
-    redrawDiagram();
-  }
-});
-
-/* =========================
-   Export/Import
-========================= */
-exportBtn.addEventListener("click", ()=> exportHoleJSON());
-importBtn.addEventListener("click", ()=> importHoleJSON());
-
-/* =========================
-   Diagram click (offline edit + YOU)
-========================= */
-canvas.addEventListener("click", (e)=>{
-  const hole = currentHole();
-  const rect = canvas.getBoundingClientRect();
-  const cx = (e.clientX - rect.left);
-  const cy = (e.clientY - rect.top);
-
-  const ll = diagramCanvasToLatLng(cx, cy);
-  if(!ll) return;
-
-  if(hole.youMode){
-    hole.you = ll;
-    persistCurrentHoleEdits();
-    redrawAll();
-    return;
-  }
-
-  if(!edit.on) return;
-
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-  if(meta?.type === "point"){
-    hole.pin = ll;
-    persistCurrentHoleEdits();
-    redrawAll();
-    return;
-  }
-
-  edit.draft.push(ll);
-  redrawAll();
-});
-
-/* =========================
-   Init
-========================= */
-courseNameEl.textContent = `Course: ${COURSE.name}`;
-syncView();
-syncEditUI();
-setHole(ui.currentHole ?? 1);
-redrawAll();
-
-/* =========================
-   Persistence helpers
-========================= */
-function loadUIState(){
-  try{
-    const raw = localStorage.getItem(UI_KEY);
-    if(raw){
-      const s = JSON.parse(raw);
-      return { currentHole: s.currentHole ?? 1, viewMode: s.viewMode ?? "diagram", lastView: s.lastView ?? null };
+  function ensureMap(){
+    if(mapReady) {
+      requestAnimationFrame(()=>{ map.invalidateSize(); redrawMap(); });
+      return;
     }
-  }catch(e){}
-  return { currentHole: 1, viewMode:"diagram", lastView:null };
-}
-function saveUIState(){ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }
 
-function loadCourseEdits(){
-  try{
-    const raw = localStorage.getItem(EDIT_KEY);
-    if(!raw) return {};
-    const data = JSON.parse(raw);
-    return (data && typeof data === "object") ? data : {};
-  }catch(e){ return {}; }
-}
-function saveCourseEdits(){ localStorage.setItem(EDIT_KEY, JSON.stringify(courseEdits)); }
+    map = L.map("map", { zoomControl:true, attributionControl:false });
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 21 }
+    ).addTo(map);
 
-function applyCourseEditsToCourse(){
-  for(const [hn, data] of Object.entries(courseEdits)){
-    const idx = Number(hn) - 1;
-    const hole = COURSE.holes[idx];
-    if(!hole || !data) continue;
+    holeLayer = L.layerGroup().addTo(map);
+    draftLayer = L.layerGroup().addTo(map);
 
-    hole.par = data.par || hole.par;
-    hole.pin = data.pin || null;
+    const last = ui.lastView;
+    if(last) map.setView([last.lat, last.lng], last.zoom);
+    else map.setView([36.0620, -93.1270], 17);
+
+    map.on("moveend", ()=>{
+      const c = map.getCenter();
+      ui.lastView = { lat:c.lat, lng:c.lng, zoom: map.getZoom() };
+      saveUI();
+    });
+
+    map.on("click", (e)=>{
+      const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
+      handleTap(ll, "map");
+    });
+
+    mapReady = true;
+
+    requestAnimationFrame(()=>{ map.invalidateSize(); centerOnSomething(false); redrawMap(); });
+    requestAnimationFrame(()=>{ map.invalidateSize(); });
+  }
+
+  /* =========================
+     Canvas taps (diagram)
+  ========================= */
+  canvas.addEventListener("click", (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+    const ll = canvasToLL(cx, cy);
+    if(!ll) return;
+    handleTap(ll, "diagram");
+  });
+
+  function handleTap(ll, source){
+    const hole = currentHole();
+
+    if(youMode){
+      hole.you = ll;
+      youMode = false;
+      toast("YOU set.");
+      persistHole();
+      redrawAll();
+      if(source === "map" && mapReady) map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 18));
+      return;
+    }
+
+    if(!editOn) return;
+
+    const meta = TARGETS.find(t=>t.key === targetKey);
+    if(meta.type === "point"){
+      hole.pin = ll;
+      toast("PIN set.");
+      persistHole();
+      redrawAll();
+      if(source === "map" && mapReady) map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 18));
+      return;
+    }
+
+    // polygon draft point
+    draft.push(ll);
+    redrawAll();
+  }
+
+  /* =========================
+     Buttons
+  ========================= */
+  $("holePrev").addEventListener("click", ()=> setHole(ui.currentHole - 1));
+  $("holeNext").addEventListener("click", ()=> setHole(ui.currentHole + 1));
+
+  viewBtn.addEventListener("click", ()=>{
+    viewMode = (viewMode === "diagram") ? "map" : "diagram";
+    ui.viewMode = viewMode;
+    saveUI();
+    syncView();
+    redrawAll();
+  });
+
+  editBtn.addEventListener("click", ()=>{
+    editOn = !editOn;
+    if(!editOn) draft = [];
+    syncHeader();
+    redrawAll();
+  });
+
+  targetBtn.addEventListener("click", ()=>{
+    const i = TARGETS.findIndex(t=>t.key === targetKey);
+    targetKey = TARGETS[(i+1) % TARGETS.length].key;
+    draft = [];
+    syncHeader();
+    redrawAll();
+  });
+
+  closeBtn.addEventListener("click", ()=>{
+    if(!editOn) return;
+    const meta = TARGETS.find(t=>t.key === targetKey);
+    if(meta.type !== "poly") return;
+
+    if(draft.length < 3){
+      toast("Need 3+ points to close.");
+      return;
+    }
+    const hole = currentHole();
+    hole[targetKey].push(draft.map(p=>({lat:p.lat, lng:p.lng})));
+    draft = [];
+    persistHole();
+    toast("Polygon saved.");
+    redrawAll();
+  });
+
+  undoBtn.addEventListener("click", ()=>{
+    const hole = currentHole();
+    const meta = TARGETS.find(t=>t.key === targetKey);
+
+    if(editOn && meta.type === "poly" && draft.length){
+      draft.pop();
+      redrawAll();
+      return;
+    }
+
+    if(meta.type === "point"){
+      hole.pin = null;
+      persistHole();
+      toast("Pin cleared.");
+      redrawAll();
+      return;
+    }
+
+    if(Array.isArray(hole[targetKey]) && hole[targetKey].length){
+      hole[targetKey].pop();
+      persistHole();
+      toast("Last shape removed.");
+      redrawAll();
+    }
+  });
+
+  clearBtn.addEventListener("click", ()=>{
+    if(!editOn){
+      toast("Turn Edit On to clear.");
+      return;
+    }
+    const hole = currentHole();
+    const meta = TARGETS.find(t=>t.key === targetKey);
+
+    if(meta.type === "point"){
+      hole.pin = null;
+      toast("Pin cleared.");
+    }else{
+      hole[targetKey] = [];
+      draft = [];
+      toast(`${meta.label} cleared.`);
+    }
+    persistHole();
+    redrawAll();
+  });
+
+  youBtn.addEventListener("click", ()=>{
+    youMode = !youMode;
+    youBtn.textContent = `You: ${youMode ? "On" : "Off"}`;
+    toast(youMode ? "Tap to place YOU." : "YOU placement off.");
+  });
+
+  centerYouBtn.addEventListener("click", ()=>{
+    const hole = currentHole();
+    if(!hole.you){ toast("No YOU set."); return; }
+    if(viewMode === "map"){
+      ensureMap();
+      map.setView([hole.you.lat, hole.you.lng], Math.max(map.getZoom(), 18));
+    }else{
+      toast("YOU is the blue marker.");
+      redrawDiagram();
+    }
+  });
+
+  centerPinBtn.addEventListener("click", ()=>{
+    const hole = currentHole();
+    if(!hole.pin){ toast("No PIN set."); return; }
+    if(viewMode === "map"){
+      ensureMap();
+      map.setView([hole.pin.lat, hole.pin.lng], Math.max(map.getZoom(), 18));
+    }else{
+      toast("PIN is the gold marker.");
+      redrawDiagram();
+    }
+  });
+
+  fitBtn.addEventListener("click", ()=>{
+    if(viewMode === "map"){
+      centerOnSomething(true);
+    }else{
+      redrawDiagram();
+      toast("Diagram fit.");
+    }
+  });
+
+  exportBtn.addEventListener("click", exportHole);
+  importBtn.addEventListener("click", importHole);
+
+  /* =========================
+     View + Render
+  ========================= */
+  courseNameEl.textContent = `Course: ${COURSE.name}`;
+  syncView();
+  setHole(ui.currentHole ?? 1);
+
+  function syncView(){
+    viewBtn.textContent = `View: ${viewMode === "diagram" ? "Diagram" : "Map"}`;
+    if(viewMode === "diagram"){
+      mapDiv.style.display = "none";
+      canvas.style.display = "block";
+    }else{
+      canvas.style.display = "none";
+      mapDiv.style.display = "block";
+      ensureMap(); // lazy init happens here
+    }
+  }
+
+  function syncHeader(){
+    editBtn.textContent = `Edit: ${editOn ? "On" : "Off"}`;
+    const meta = TARGETS.find(t=>t.key === targetKey);
+    targetBtn.textContent = `Target: ${meta.label}`;
+    editPill.style.display = editOn ? "inline-flex" : "none";
+    youBtn.textContent = `You: ${youMode ? "On" : "Off"}`;
+  }
+
+  function setHole(n){
+    if(n < 1) n = 18;
+    if(n > 18) n = 1;
+    ui.currentHole = n;
+    saveUI();
+    draft = [];
+    youMode = false;
+    syncHeader();
+    updateStatus();
+    redrawAll();
+    if(viewMode === "map" && mapReady) centerOnSomething(false);
+  }
+
+  function redrawAll(){
+    syncHeader();
+    updateStatus();
+    if(viewMode === "diagram") redrawDiagram();
+    else redrawMap();
+  }
+
+  function updateStatus(){
+    const hole = currentHole();
+    holeNumEl.textContent = hole.n;
+    parTagEl.textContent = `Par ${hole.par}`;
+    holeSummary.textContent = `${hole.pin ? "Pin set" : "No pin"} • ${hole.you ? "You set" : "No you"}`;
+    statusTitle.textContent = (viewMode === "diagram") ? "Offline Diagram" : "Map View";
+
+    const meta = TARGETS.find(t=>t.key === targetKey);
+    if(youMode) statusText.textContent = "Tap the view to place YOU (blue).";
+    else if(editOn) statusText.textContent = meta.type === "point"
+      ? "Tap to place PIN (gold)."
+      : "Tap points, then Close to save polygon.";
+    else statusText.textContent = "Turn Edit On to draw, or You: On to place yourself.";
+
+    layerCount.textContent =
+      `Green:${hole.green.length} • Fairway:${hole.fairway.length} • Tee:${hole.tee.length} • ` +
+      `Bunker:${hole.bunker.length} • Water:${hole.water.length} • Hazard:${hole.hazard.length} • OB:${hole.ob.length}` +
+      (draft.length ? ` • Draft:${draft.length}` : "");
+  }
+
+  /* =========================
+     Map render
+  ========================= */
+  function redrawMap(){
+    if(!mapReady) return;
+    holeLayer.clearLayers();
+    draftLayer.clearLayers();
+
+    const hole = currentHole();
+
+    const styles = {
+      green:  { color:"#3fbf7f", weight:2, fillColor:"#3fbf7f", fillOpacity:0.16 },
+      fairway:{ color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.10 },
+      tee:    { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.10 },
+      bunker: { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.08 },
+      water:  { color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.18 },
+      hazard: { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.10 },
+      ob:     { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.06, dashArray:"6 6" }
+    };
+
+    drawPolySet(hole.fairway, styles.fairway);
+    drawPolySet(hole.tee, styles.tee);
+    drawPolySet(hole.green, styles.green);
+    drawPolySet(hole.bunker, styles.bunker);
+    drawPolySet(hole.water, styles.water);
+    drawPolySet(hole.hazard, styles.hazard);
+    drawPolySet(hole.ob, styles.ob);
+
+    if(hole.pin){
+      L.circleMarker([hole.pin.lat, hole.pin.lng], { radius:8, color:"#0a0d12", weight:3, fillColor:"#d1a14b", fillOpacity:0.98 })
+        .addTo(holeLayer)
+        .bindTooltip("PIN", {permanent:true, direction:"right", className:"map-label", offset:[10,-8]});
+    }
+
+    if(hole.you){
+      L.circleMarker([hole.you.lat, hole.you.lng], { radius:9, color:"#0a0d12", weight:3, fillColor:"#4aa6ff", fillOpacity:0.98 })
+        .addTo(holeLayer)
+        .bindTooltip("YOU", {permanent:true, direction:"right", className:"map-label", offset:[10,-8]});
+    }
+
+    if(editOn){
+      const meta = TARGETS.find(t=>t.key === targetKey);
+      if(meta.type === "poly" && draft.length){
+        L.polyline(draft.map(p=>[p.lat,p.lng]), { color:"#ffffff", weight:2, opacity:0.9 }).addTo(draftLayer);
+        draft.forEach(p=>{
+          L.circleMarker([p.lat,p.lng], { radius:4, color:"#0a0d12", weight:2, fillColor:"#ffffff", fillOpacity:0.95 }).addTo(draftLayer);
+        });
+      }
+    }
+
+    function drawPolySet(set, style){
+      if(!Array.isArray(set) || !set.length) return;
+      set.forEach(poly=>{
+        if(Array.isArray(poly) && poly.length >= 3){
+          L.polygon(poly.map(p=>[p.lat,p.lng]), style).addTo(holeLayer);
+        }
+      });
+    }
+  }
+
+  function centerOnSomething(fit){
+    if(!mapReady) return;
+    const hole = currentHole();
+
+    const pts = collectAllPoints(hole, (editOn ? draft : null));
+
+    if(fit && pts.length >= 2){
+      const b = L.latLngBounds(pts.map(p=>[p.lat,p.lng]));
+      map.fitBounds(b.pad(0.15));
+      return;
+    }
+
+    const anchor =
+      hole.you || hole.pin ||
+      (hole.green?.[0]?.[0]) || (hole.fairway?.[0]?.[0]) || (hole.tee?.[0]?.[0]) ||
+      (ui.lastView ? {lat:ui.lastView.lat, lng:ui.lastView.lng} : {lat:36.0620, lng:-93.1270});
+
+    map.setView([anchor.lat, anchor.lng], Math.max(map.getZoom(), 18));
+  }
+
+  /* =========================
+     Diagram render (offline picture)
+  ========================= */
+  let view = { minX:0, maxY:1, s:1, pad:24, kx:1 };
+
+  function redrawDiagram(){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,rect.width,rect.height);
+
+    // background grid
+    ctx.fillStyle = "rgba(255,255,255,0.03)";
+    ctx.fillRect(0,0,rect.width,rect.height);
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+    for(let x=24; x<rect.width; x+=28){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,rect.height); ctx.stroke(); }
+    for(let y=24; y<rect.height; y+=28){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(rect.width,y); ctx.stroke(); }
+
+    const hole = currentHole();
+    const pts = collectAllPoints(hole, (editOn ? draft : null));
+
+    ctx.fillStyle = "rgba(233,230,220,0.8)";
+    ctx.font = "900 13px system-ui";
+    ctx.fillText(`Hole ${hole.n} • Par ${hole.par} • Diagram`, 14, 22);
+
+    if(pts.length < 2){
+      ctx.fillStyle = "rgba(233,230,220,0.65)";
+      ctx.font = "800 14px system-ui";
+      ctx.fillText("No shapes yet.", 14, 48);
+      ctx.fillStyle = "rgba(183,177,162,0.75)";
+      ctx.font = "650 12px system-ui";
+      ctx.fillText("Edit: On → draw shapes. You: On → place yourself.", 14, 68);
+      view = { minX:0, maxY:1, s:1, pad:24, kx:1 };
+      return;
+    }
+
+    // Fit bounds using equirectangular local xy
+    const meanLat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+    const kx = Math.cos(meanLat * Math.PI/180) || 1;
+    const xy = pts.map(p=>({ x: p.lng * kx, y: p.lat }));
+
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    xy.forEach(p=>{
+      minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
+      minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
+    });
+
+    const pad = 24;
+    const spanX = Math.max(1e-9, maxX-minX);
+    const spanY = Math.max(1e-9, maxY-minY);
+    const s = Math.min((rect.width-pad*2)/spanX, (rect.height-pad*2)/spanY);
+
+    view = { minX, maxY, s, pad, kx };
+
+    // layers
+    drawPolySet(hole.fairway,  "rgba(74,166,255,0.12)", "rgba(74,166,255,0.55)", 2);
+    drawPolySet(hole.tee,      "rgba(209,161,75,0.10)", "rgba(209,161,75,0.55)", 2);
+    drawPolySet(hole.green,    "rgba(63,191,127,0.18)", "rgba(63,191,127,0.80)", 2.2);
+    drawPolySet(hole.bunker,   "rgba(209,161,75,0.08)", "rgba(209,161,75,0.40)", 2);
+    drawPolySet(hole.water,    "rgba(74,166,255,0.18)", "rgba(74,166,255,0.55)", 2);
+    drawPolySet(hole.hazard,   "rgba(204,59,59,0.12)",  "rgba(204,59,59,0.62)",  2);
+    drawPolySet(hole.ob,       "rgba(204,59,59,0.06)",  "rgba(204,59,59,0.70)",  2, [6,6]);
+
+    // draft
+    if(editOn && draft.length){
+      drawPath(draft, "rgba(255,255,255,0.06)", "rgba(255,255,255,0.92)", 2);
+      draft.forEach(p=> dot(p, 4.8, "rgba(255,255,255,0.95)"));
+    }
+
+    // markers
+    if(hole.pin){ dot(hole.pin, 7, "rgba(209,161,75,0.95)", true, "PIN"); }
+    if(hole.you){ dot(hole.you, 7.5, "rgba(74,166,255,0.95)", true, "YOU"); }
+
+    function drawPolySet(set, fill, stroke, w, dash=null){
+      if(!Array.isArray(set) || !set.length) return;
+      set.forEach(poly=>{
+        if(Array.isArray(poly) && poly.length >= 3){
+          drawPath(poly, fill, stroke, w, dash, true);
+        }
+      });
+    }
+    function drawPath(points, fill, stroke, w, dash=null, closed=false){
+      const pts2 = points.map(llToCanvas);
+      ctx.save();
+      ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      pts2.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+      if(closed) ctx.closePath();
+      if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = w;
+      ctx.stroke();
+      ctx.restore();
+    }
+    function dot(ll, r, fill, label=false, text=""){
+      const p = llToCanvas(ll);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,r,0,Math.PI*2);
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      if(label){
+        ctx.fillStyle = "rgba(233,230,220,0.78)";
+        ctx.font = "900 12px system-ui";
+        ctx.fillText(text, p.x+10, p.y-8);
+      }
+    }
+  }
+
+  function llToCanvas(ll){
+    const {minX, maxY, s, pad, kx} = view;
+    const x = ll.lng * kx;
+    const y = ll.lat;
+    return {
+      x: pad + (x - minX) * s,
+      y: pad + (maxY - y) * s
+    };
+  }
+
+  function canvasToLL(cx, cy){
+    const {minX, maxY, s, pad, kx} = view;
+    if(!s || !isFinite(minX) || !isFinite(maxY)) return null;
+    const x = (cx - pad)/s + minX;
+    const y = maxY - ((cy - pad)/s);
+    const lng = x / kx;
+    const lat = y;
+    if(!isFinite(lat) || !isFinite(lng)) return null;
+    return { lat, lng };
+  }
+
+  function collectAllPoints(hole, extraDraft=null){
+    const pts = [];
+    if(hole.pin) pts.push(hole.pin);
+    if(hole.you) pts.push(hole.you);
+    ["green","fairway","tee","bunker","water","hazard","ob"].forEach(k=>{
+      const set = hole[k];
+      if(Array.isArray(set)){
+        set.forEach(poly=>{
+          if(Array.isArray(poly)) poly.forEach(p=> pts.push(p));
+        });
+      }
+    });
+    if(Array.isArray(extraDraft)) extraDraft.forEach(p=> pts.push(p));
+    return pts;
+  }
+
+  /* =========================
+     Persistence
+  ========================= */
+  function loadUI(){
+    try{
+      const raw = localStorage.getItem(UI_KEY);
+      if(!raw) return { currentHole:1, viewMode:"diagram", lastView:null };
+      const s = JSON.parse(raw);
+      return {
+        currentHole: s.currentHole ?? 1,
+        viewMode: s.viewMode ?? "diagram",
+        lastView: s.lastView ?? null
+      };
+    }catch(e){
+      return { currentHole:1, viewMode:"diagram", lastView:null };
+    }
+  }
+  function saveUI(){
+    localStorage.setItem(UI_KEY, JSON.stringify(ui));
+  }
+
+  function loadEdits(){
+    try{
+      const raw = localStorage.getItem(EDIT_KEY);
+      if(!raw) return {};
+      const d = JSON.parse(raw);
+      return (d && typeof d === "object") ? d : {};
+    }catch(e){
+      return {};
+    }
+  }
+
+  function applyEdits(){
+    for(const [hn, data] of Object.entries(edits)){
+      const idx = Number(hn) - 1;
+      const hole = COURSE.holes[idx];
+      if(!hole || !data) continue;
+
+      hole.par = data.par ?? hole.par;
+      hole.pin = data.pin ?? null;
+      hole.you = data.you ?? null;
+
+      hole.green = Array.isArray(data.green) ? data.green : [];
+      hole.fairway = Array.isArray(data.fairway) ? data.fairway : [];
+      hole.tee = Array.isArray(data.tee) ? data.tee : [];
+      hole.bunker = Array.isArray(data.bunker) ? data.bunker : [];
+      hole.water = Array.isArray(data.water) ? data.water : [];
+      hole.hazard = Array.isArray(data.hazard) ? data.hazard : [];
+      hole.ob = Array.isArray(data.ob) ? data.ob : [];
+    }
+  }
+
+  function persistHole(){
+    const hole = currentHole();
+    edits[hole.n] = {
+      par: hole.par,
+      pin: hole.pin || null,
+      you: hole.you || null,
+      green: hole.green || [],
+      fairway: hole.fairway || [],
+      tee: hole.tee || [],
+      bunker: hole.bunker || [],
+      water: hole.water || [],
+      hazard: hole.hazard || [],
+      ob: hole.ob || []
+    };
+    localStorage.setItem(EDIT_KEY, JSON.stringify(edits));
+  }
+
+  function currentHole(){
+    return COURSE.holes[(ui.currentHole ?? 1) - 1];
+  }
+
+  /* =========================
+     Export / Import (per hole)
+  ========================= */
+  async function copy(text){
+    try{ await navigator.clipboard.writeText(text); }
+    catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+  }
+
+  function exportHole(){
+    const hole = currentHole();
+    const payload = {
+      n: hole.n, par: hole.par,
+      you: hole.you, pin: hole.pin,
+      green: hole.green, fairway: hole.fairway, tee: hole.tee,
+      bunker: hole.bunker, water: hole.water, hazard: hole.hazard, ob: hole.ob
+    };
+    copy(JSON.stringify(payload, null, 2));
+    toast("Copied hole JSON.");
+  }
+
+  function importHole(){
+    const raw = prompt("Paste hole JSON (replaces this hole):");
+    if(!raw) return;
+    let data;
+    try{ data = JSON.parse(raw); }catch(e){ alert("Invalid JSON."); return; }
+
+    const hole = currentHole();
+    hole.par = data.par ?? hole.par;
+    hole.you = data.you ?? null;
+    hole.pin = data.pin ?? null;
 
     hole.green = Array.isArray(data.green) ? data.green : [];
     hole.fairway = Array.isArray(data.fairway) ? data.fairway : [];
@@ -603,680 +993,24 @@ function applyCourseEditsToCourse(){
     hole.hazard = Array.isArray(data.hazard) ? data.hazard : [];
     hole.ob = Array.isArray(data.ob) ? data.ob : [];
 
-    hole.you = data.you || null;
-  }
-}
-
-function persistCurrentHoleEdits(){
-  const hole = currentHole();
-  courseEdits[hole.n] = {
-    par: hole.par,
-    pin: hole.pin || null,
-    green: hole.green || [],
-    fairway: hole.fairway || [],
-    tee: hole.tee || [],
-    bunker: hole.bunker || [],
-    water: hole.water || [],
-    hazard: hole.hazard || [],
-    ob: hole.ob || [],
-    you: hole.you || null
-  };
-  saveCourseEdits();
-  updateStatus();
-}
-
-/* =========================
-   Hole helpers
-========================= */
-function currentHole(){ return COURSE.holes[ui.currentHole - 1]; }
-
-function setHole(n){
-  if(n < 1) n = 18;
-  if(n > 18) n = 1;
-  ui.currentHole = n;
-  saveUIState();
-  edit.draft = [];
-  updateStatus();
-  const hole = currentHole();
-  youBtn.textContent = `You: ${hole.youMode ? "On" : "Off"}`;
-  if(viewMode === "map") centerMapOnHole(false);
-}
-
-/* =========================
-   UI sync
-========================= */
-function syncView(){
-  viewBtn.textContent = `View: ${viewMode === "diagram" ? "Diagram" : "Map"}`;
-  if(viewMode === "diagram"){
-    mapDiv.style.display = "none";
-    canvas.style.display = "block";
-  }else{
-    canvas.style.display = "none";
-    mapDiv.style.display = "block";
-    ensureMapReady();
-  }
-}
-function syncEditUI(){
-  editBtn.textContent = `Edit: ${edit.on ? "On" : "Off"}`;
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-  targetBtn.textContent = `Target: ${meta ? meta.label : edit.target}`;
-  editPill.style.display = edit.on ? "inline-flex" : "none";
-}
-
-/* =========================
-   Status panel
-========================= */
-function updateStatus(){
-  const hole = currentHole();
-  holeNumEl.textContent = hole.n;
-  parTagEl.textContent = `Par ${hole.par}`;
-  holeSummary.textContent = `${hole.pin ? "Pin set" : "No pin"} • ${hole.you ? "You set" : "No you"}`;
-
-  statusTitle.textContent = viewMode === "diagram" ? "Offline Diagram" : "Map View";
-  statusText.textContent =
-    hole.you
-      ? "Use Center You to jump back to your marker. (No GPS needed.)"
-      : "Tap You: On → tap the view to drop a YOU marker.";
-
-  const counts = {
-    green: hole.green?.length||0,
-    fairway: hole.fairway?.length||0,
-    tee: hole.tee?.length||0,
-    bunker: hole.bunker?.length||0,
-    water: hole.water?.length||0,
-    hazard: hole.hazard?.length||0,
-    ob: hole.ob?.length||0
-  };
-  layerCount.textContent =
-    `Layers — Green:${counts.green} • Fairway:${counts.fairway} • Tee:${counts.tee} • Bunker:${counts.bunker} • Water:${counts.water} • Hazard:${counts.hazard} • OB:${counts.ob}`;
-}
-
-/* =========================
-   Export / Import (per-hole)
-========================= */
-function exportHoleJSON(){
-  const hole = currentHole();
-  const data = {
-    n: hole.n, par: hole.par, pin: hole.pin,
-    green: hole.green, fairway: hole.fairway, tee: hole.tee,
-    bunker: hole.bunker, water: hole.water, hazard: hole.hazard, ob: hole.ob,
-    you: hole.you
-  };
-  copyToClipboard(JSON.stringify(data, null, 2));
-  toast("Hole JSON copied.");
-}
-function importHoleJSON(){
-  const raw = prompt("Paste hole JSON (replaces this hole):");
-  if(!raw) return;
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ alert("Invalid JSON."); return; }
-
-  const hole = currentHole();
-  hole.par = data.par || hole.par;
-  hole.pin = data.pin || null;
-  hole.green = Array.isArray(data.green) ? data.green : [];
-  hole.fairway = Array.isArray(data.fairway) ? data.fairway : [];
-  hole.tee = Array.isArray(data.tee) ? data.tee : [];
-  hole.bunker = Array.isArray(data.bunker) ? data.bunker : [];
-  hole.water = Array.isArray(data.water) ? data.water : [];
-  hole.hazard = Array.isArray(data.hazard) ? data.hazard : [];
-  hole.ob = Array.isArray(data.ob) ? data.ob : [];
-  hole.you = data.you || null;
-
-  persistCurrentHoleEdits();
-  edit.draft = [];
-  redrawAll();
-  toast("Imported.");
-}
-async function copyToClipboard(text){
-  try{ await navigator.clipboard.writeText(text); }
-  catch(e){
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-  }
-}
-
-/* =========================
-   Leaflet Map (LAZY INIT)
-========================= */
-let map = null;
-let mapInitialized = false;
-let tileLayer = null;
-let holeGroup = null;
-let draftGroup = null;
-
-function ensureMapReady(){
-  if(mapInitialized){
-    requestAnimationFrame(()=>{
-      map.invalidateSize();
-      redrawMap();
-    });
-    return;
-  }
-
-  mapDiv.style.display = "block";
-
-  map = L.map("map", { zoomControl:true, attributionControl:false });
-
-  tileLayer = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom: 21 }
-  ).addTo(map);
-
-  holeGroup = L.layerGroup().addTo(map);
-  draftGroup = L.layerGroup().addTo(map);
-
-  if(ui.lastView){
-    map.setView([ui.lastView.lat, ui.lastView.lng], ui.lastView.zoom);
-  }else{
-    map.setView([36.0620, -93.1270], 17);
-  }
-
-  map.on("moveend", ()=>{
-    const c = map.getCenter();
-    ui.lastView = { lat:c.lat, lng:c.lng, zoom: map.getZoom() };
-    saveUIState();
-  });
-
-  map.on("click", (e)=>{
-    const hole = currentHole();
-    const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
-
-    if(hole.youMode){
-      hole.you = ll;
-      hole.youMode = false;
-      youBtn.textContent = "You: Off";
-      persistCurrentHoleEdits();
-      redrawAll();
-      // jump to you immediately so you don't lose it
-      map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 18));
-      toast("YOU marker placed.");
-      return;
-    }
-
-    if(!edit.on) return;
-
-    const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-    if(meta?.type === "point"){
-      hole.pin = ll;
-      persistCurrentHoleEdits();
-      redrawAll();
-      toast("Pin set.");
-      return;
-    }
-
-    edit.draft.push(ll);
+    persistHole();
+    draft = [];
+    toast("Imported.");
     redrawAll();
-  });
-
-  mapInitialized = true;
-
-  requestAnimationFrame(()=>{
-    map.invalidateSize();
-    centerMapOnHole(false);
-    redrawMap();
-  });
-  requestAnimationFrame(()=>{ map.invalidateSize(); });
-}
-
-function centerMapOnHole(fit){
-  if(!mapInitialized) return;
-  const hole = currentHole();
-
-  const anchor =
-    hole.you ||
-    hole.pin ||
-    (hole.green?.[0]?.[0]) ||
-    (hole.fairway?.[0]?.[0]) ||
-    (hole.tee?.[0]?.[0]) ||
-    (ui.lastView ? {lat:ui.lastView.lat, lng:ui.lastView.lng} : {lat:36.0620, lng:-93.1270});
-
-  if(fit){
-    const pts = collectAllHolePoints(hole, edit.on ? edit.draft : null);
-    if(pts.length >= 2){
-      const bounds = L.latLngBounds(pts.map(p=>[p.lat,p.lng]));
-      map.fitBounds(bounds.pad(0.15));
-      return;
-    }
+    if(viewMode === "map") centerOnSomething(false);
   }
 
-  map.setView([anchor.lat, anchor.lng], Math.max(map.getZoom(), 18));
-}
-
-function redrawMap(){
-  if(!mapInitialized) return;
-  holeGroup.clearLayers();
-  draftGroup.clearLayers();
-
-  const hole = currentHole();
-
-  drawPolySet(hole.fairway,  { color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.10 });
-  drawPolySet(hole.tee,      { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.10 });
-  drawPolySet(hole.green,    { color:"#3fbf7f", weight:2, fillColor:"#3fbf7f", fillOpacity:0.16 });
-  drawPolySet(hole.bunker,   { color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.08 });
-  drawPolySet(hole.water,    { color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.18 });
-  drawPolySet(hole.hazard,   { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.10 });
-  drawPolySet(hole.ob,       { color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.06, dashArray:"6 6" });
-
-  if(hole.pin){
-    L.circleMarker([hole.pin.lat, hole.pin.lng], {
-      radius: 8, color:"#0a0d12", weight:3, fillColor:"#d1a14b", fillOpacity:0.98
-    }).addTo(holeGroup)
-     .bindTooltip("PIN", {permanent:true, direction:"right", className:"you-label", offset:[10,-8]});
+  /* =========================
+     Toast
+  ========================= */
+  function toast(msg){
+    statusText.textContent = msg;
+    clearTimeout(window.__t);
+    window.__t = setTimeout(()=> updateStatus(), 2200);
   }
 
-  if(hole.you){
-    L.circleMarker([hole.you.lat, hole.you.lng], {
-      radius: 9, color:"#0a0d12", weight:3, fillColor:"#4aa6ff", fillOpacity:0.98
-    }).addTo(holeGroup)
-     .bindTooltip("YOU", {permanent:true, direction:"right", className:"you-label", offset:[10,-8]});
-  }
-
-  if(edit.on){
-    const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-    if(meta?.type === "poly" && edit.draft.length){
-      L.polyline(edit.draft.map(p=>[p.lat,p.lng]), { color:"#ffffff", weight:2, opacity:0.90 }).addTo(draftGroup);
-      edit.draft.forEach(p=>{
-        L.circleMarker([p.lat,p.lng], { radius:4, color:"#0a0d12", weight:2, fillColor:"#ffffff", fillOpacity:0.95 }).addTo(draftGroup);
-      });
-    }
-  }
-
-  function drawPolySet(set, style){
-    if(!Array.isArray(set) || !set.length) return;
-    set.forEach(poly=>{
-      if(Array.isArray(poly) && poly.length >= 3){
-        L.polygon(poly.map(p=>[p.lat,p.lng]), style).addTo(holeGroup);
-      }
-    });
-  }
-}
-
-/* =========================
-   Diagram renderer
-========================= */
-let diagramView = { minX:0, maxX:1, minY:0, maxY:1, s:1, pad:24, kx:1 };
-
-function redrawDiagram(){
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,rect.width,rect.height);
-
-  const hole = currentHole();
-  const pts = collectAllHolePoints(hole, edit.on ? edit.draft : null);
-
-  // background
-  ctx.fillStyle = "rgba(255,255,255,0.03)";
-  ctx.fillRect(0,0,rect.width,rect.height);
-  ctx.strokeStyle = "rgba(255,255,255,0.05)";
-  ctx.lineWidth = 1;
-  for(let x=24; x<rect.width; x+=28){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,rect.height); ctx.stroke(); }
-  for(let y=24; y<rect.height; y+=28){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(rect.width,y); ctx.stroke(); }
-
-  ctx.fillStyle = "rgba(233,230,220,0.8)";
-  ctx.font = "900 13px system-ui";
-  ctx.fillText(`Hole ${hole.n} • Par ${hole.par} • Diagram`, 14, 22);
-
-  if(pts.length < 2){
-    ctx.fillStyle = "rgba(233,230,220,0.65)";
-    ctx.font = "800 14px system-ui";
-    ctx.fillText("No shapes yet.", 14, 48);
-    ctx.fillStyle = "rgba(183,177,162,0.75)";
-    ctx.font = "650 12px system-ui";
-    ctx.fillText("Turn Edit On and draw layers. Use You: On to drop your position.", 14, 68);
-    return;
-  }
-
-  const meanLat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
-  const kx = Math.cos(meanLat * Math.PI/180) || 1;
-
-  const xy = pts.map(p=>({ x: p.lng * kx, y: p.lat }));
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  xy.forEach(p=>{
-    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x);
-    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y);
-  });
-
-  const pad = 24;
-  const spanX = Math.max(1e-9, maxX-minX);
-  const spanY = Math.max(1e-9, maxY-minY);
-  const s = Math.min((rect.width-pad*2)/spanX, (rect.height-pad*2)/spanY);
-
-  diagramView = { minX,maxX,minY,maxY,s,pad,kx };
-
-  drawPolySet(hole.fairway,  "rgba(74,166,255,0.12)", "rgba(74,166,255,0.55)", 2);
-  drawPolySet(hole.tee,      "rgba(209,161,75,0.10)", "rgba(209,161,75,0.55)", 2);
-  drawPolySet(hole.green,    "rgba(63,191,127,0.18)", "rgba(63,191,127,0.80)", 2.2);
-  drawPolySet(hole.bunker,   "rgba(209,161,75,0.08)", "rgba(209,161,75,0.40)", 2);
-  drawPolySet(hole.water,    "rgba(74,166,255,0.18)", "rgba(74,166,255,0.55)", 2);
-  drawPolySet(hole.hazard,   "rgba(204,59,59,0.12)",  "rgba(204,59,59,0.62)",  2);
-  drawPolySet(hole.ob,       "rgba(204,59,59,0.06)",  "rgba(204,59,59,0.70)",  2, [6,6]);
-
-  if(edit.on && edit.draft.length){
-    drawPath(edit.draft, "rgba(255,255,255,0.08)", "rgba(255,255,255,0.92)", 2);
-    edit.draft.forEach(p=> drawDot(p, 4.8, "rgba(255,255,255,0.95)", "rgba(0,0,0,0.55)"));
-  }
-
-  if(hole.pin){
-    drawDot(hole.pin, 7, "rgba(209,161,75,0.95)", "rgba(0,0,0,0.55)");
-    labelAt(hole.pin, "PIN");
-  }
-  if(hole.you){
-    drawDot(hole.you, 7.5, "rgba(74,166,255,0.95)", "rgba(0,0,0,0.55)");
-    labelAt(hole.you, "YOU");
-  }
-
-  function drawPolySet(set, fill, stroke, width, dash=null){
-    if(!Array.isArray(set) || !set.length) return;
-    set.forEach(poly=>{
-      if(Array.isArray(poly) && poly.length >= 3){
-        drawPath(poly, fill, stroke, width, dash, true);
-      }
-    });
-  }
-  function drawPath(points, fill, stroke, width, dash=null, closed=false){
-    const pts2 = points.map(ll=> latLngToCanvas(ll));
-    ctx.save();
-    ctx.setLineDash(dash || []);
-    ctx.beginPath();
-    pts2.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
-    if(closed) ctx.closePath();
-    if(fill){ ctx.fillStyle = fill; ctx.fill(); }
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.stroke();
-    ctx.restore();
-  }
-  function drawDot(ll, r, fill, stroke){
-    const p = latLngToCanvas(ll);
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,r,0,Math.PI*2);
-    ctx.fillStyle = fill; ctx.fill();
-    ctx.strokeStyle = stroke; ctx.lineWidth = 3; ctx.stroke();
-  }
-  function labelAt(ll, text){
-    const p = latLngToCanvas(ll);
-    ctx.fillStyle = "rgba(233,230,220,0.78)";
-    ctx.font = "900 12px system-ui";
-    ctx.fillText(text, p.x+10, p.y-8);
-  }
-}
-
-function latLngToCanvas(ll){
-  const {minX,maxY,s,pad,kx} = diagramView;
-  const x = ll.lng * kx;
-  const y = ll.lat;
-  return { x: pad + (x - minX) * s, y: pad + (maxY - y) * s };
-}
-function diagramCanvasToLatLng(cx, cy){
-  const {minX,maxY,s,pad,kx} = diagramView;
-  if(!s || !isFinite(minX) || !isFinite(maxY)) return null;
-  const x = (cx - pad)/s + minX;
-  const y = maxY - ((cy - pad)/s);
-  return { lat: y, lng: x / kx };
-}
-
-function collectAllHolePoints(hole, draft=null){
-  const pts = [];
-  if(hole.pin) pts.push(hole.pin);
-  if(hole.you) pts.push(hole.you);
-  ["green","fairway","tee","bunker","water","hazard","ob"].forEach(k=>{
-    const set = hole[k];
-    if(Array.isArray(set)){
-      set.forEach(poly=>{
-        if(Array.isArray(poly)) poly.forEach(p=> pts.push(p));
-      });
-    }
-  });
-  if(Array.isArray(draft)) draft.forEach(p=> pts.push(p));
-  return pts;
-}
-
-/* =========================
-   Redraw coordinator
-========================= */
-function redrawAll(){
-  syncEditUI();
-  updateStatus();
-
-  if(viewMode === "diagram"){
-    redrawDiagram();
-  }else{
-    ensureMapReady();
-    redrawMap();
-  }
-}
-
-/* =========================
-   UI helpers
-========================= */
-function toast(msg){
-  statusText.textContent = msg;
-  clearTimeout(window.__toastT);
-  window.__toastT = setTimeout(()=> updateStatus(), 2200);
-}
-
-function syncEditUI(){
-  editBtn.textContent = `Edit: ${edit.on ? "On" : "Off"}`;
-  const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-  targetBtn.textContent = `Target: ${meta ? meta.label : edit.target}`;
-  editPill.style.display = edit.on ? "inline-flex" : "none";
-  youBtn.textContent = `You: ${currentHole().youMode ? "On" : "Off"}`;
-}
-
-function updateStatus(){
-  const hole = currentHole();
-  holeNumEl.textContent = hole.n;
-  parTagEl.textContent = `Par ${hole.par}`;
-  holeSummary.textContent = `${hole.pin ? "Pin set" : "No pin"} • ${hole.you ? "You set" : "No you"}`;
-  statusTitle.textContent = viewMode === "diagram" ? "Offline Diagram" : "Map View";
-  layerCount.textContent =
-    `Green:${hole.green.length} • Fairway:${hole.fairway.length} • Tee:${hole.tee.length} • Bunker:${hole.bunker.length} • Water:${hole.water.length} • Hazard:${hole.hazard.length} • OB:${hole.ob.length}`;
-}
-
-/* =========================
-   (Leaflet lazy-init + draw) and remaining functions
-   NOTE: kept identical to above where possible.
-========================= */
-let map = null;
-let mapInitialized = false;
-let tileLayer = null;
-let holeGroup = null;
-let draftGroup = null;
-
-function ensureMapReady(){
-  if(mapInitialized){
-    requestAnimationFrame(()=>{ map.invalidateSize(); redrawMap(); });
-    return;
-  }
-
-  mapDiv.style.display = "block";
-  map = L.map("map", { zoomControl:true, attributionControl:false });
-
-  tileLayer = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom: 21 }
-  ).addTo(map);
-
-  holeGroup = L.layerGroup().addTo(map);
-  draftGroup = L.layerGroup().addTo(map);
-
-  if(ui.lastView){
-    map.setView([ui.lastView.lat, ui.lastView.lng], ui.lastView.zoom);
-  }else{
-    map.setView([36.0620, -93.1270], 17);
-  }
-
-  map.on("moveend", ()=>{
-    const c = map.getCenter();
-    ui.lastView = { lat:c.lat, lng:c.lng, zoom: map.getZoom() };
-    saveUIState();
-  });
-
-  map.on("click", (e)=>{
-    const hole = currentHole();
-    const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
-
-    if(hole.youMode){
-      hole.you = ll;
-      hole.youMode = false;
-      persistCurrentHoleEdits();
-      redrawAll();
-      map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 18));
-      toast("YOU marker placed.");
-      return;
-    }
-
-    if(!edit.on) return;
-
-    const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-    if(meta?.type === "point"){
-      hole.pin = ll;
-      persistCurrentHoleEdits();
-      redrawAll();
-      toast("Pin set.");
-      return;
-    }
-
-    edit.draft.push(ll);
-    redrawAll();
-  });
-
-  mapInitialized = true;
-
-  requestAnimationFrame(()=>{
-    map.invalidateSize();
-    centerMapOnHole(false);
-    redrawMap();
-  });
-  requestAnimationFrame(()=>{ map.invalidateSize(); });
-}
-
-function redrawMap(){
-  if(!mapInitialized) return;
-  holeGroup.clearLayers();
-  draftGroup.clearLayers();
-
-  const hole = currentHole();
-
-  const polyStyle = {
-    fairway:{ color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.10 },
-    tee:{     color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.10 },
-    green:{   color:"#3fbf7f", weight:2, fillColor:"#3fbf7f", fillOpacity:0.16 },
-    bunker:{  color:"#d1a14b", weight:2, fillColor:"#d1a14b", fillOpacity:0.08 },
-    water:{   color:"#4aa6ff", weight:2, fillColor:"#4aa6ff", fillOpacity:0.18 },
-    hazard:{  color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.10 },
-    ob:{      color:"#cc3b3b", weight:2, fillColor:"#cc3b3b", fillOpacity:0.06, dashArray:"6 6" }
-  };
-
-  drawPolySet(hole.fairway, polyStyle.fairway);
-  drawPolySet(hole.tee,     polyStyle.tee);
-  drawPolySet(hole.green,   polyStyle.green);
-  drawPolySet(hole.bunker,  polyStyle.bunker);
-  drawPolySet(hole.water,   polyStyle.water);
-  drawPolySet(hole.hazard,  polyStyle.hazard);
-  drawPolySet(hole.ob,      polyStyle.ob);
-
-  if(hole.pin){
-    L.circleMarker([hole.pin.lat, hole.pin.lng], {
-      radius: 8, color:"#0a0d12", weight:3, fillColor:"#d1a14b", fillOpacity:0.98
-    }).addTo(holeGroup)
-     .bindTooltip("PIN", {permanent:true, direction:"right", className:"you-label", offset:[10,-8]});
-  }
-
-  if(hole.you){
-    L.circleMarker([hole.you.lat, hole.you.lng], {
-      radius: 9, color:"#0a0d12", weight:3, fillColor:"#4aa6ff", fillOpacity:0.98
-    }).addTo(holeGroup)
-     .bindTooltip("YOU", {permanent:true, direction:"right", className:"you-label", offset:[10,-8]});
-  }
-
-  if(edit.on){
-    const meta = EDIT_TARGETS.find(t=>t.key === edit.target);
-    if(meta?.type === "poly" && edit.draft.length){
-      L.polyline(edit.draft.map(p=>[p.lat,p.lng]), { color:"#ffffff", weight:2, opacity:0.90 }).addTo(draftGroup);
-      edit.draft.forEach(p=>{
-        L.circleMarker([p.lat,p.lng], { radius:4, color:"#0a0d12", weight:2, fillColor:"#ffffff", fillOpacity:0.95 }).addTo(draftGroup);
-      });
-    }
-  }
-
-  function drawPolySet(set, style){
-    if(!Array.isArray(set) || !set.length) return;
-    set.forEach(poly=>{
-      if(Array.isArray(poly) && poly.length >= 3){
-        L.polygon(poly.map(p=>[p.lat,p.lng]), style).addTo(holeGroup);
-      }
-    });
-  }
-}
-
-function centerMapOnHole(fit){
-  if(!mapInitialized) return;
-  const hole = currentHole();
-  const anchor =
-    hole.you ||
-    hole.pin ||
-    (hole.green?.[0]?.[0]) ||
-    (hole.fairway?.[0]?.[0]) ||
-    (hole.tee?.[0]?.[0]) ||
-    (ui.lastView ? {lat:ui.lastView.lat, lng:ui.lastView.lng} : {lat:36.0620, lng: -93.1270});
-
-  if(fit){
-    const pts = collectAllHolePoints(hole, edit.on ? edit.draft : null);
-    if(pts.length >= 2){
-      const bounds = L.latLngBounds(pts.map(p=>[p.lat,p.lng]));
-      map.fitBounds(bounds.pad(0.15));
-      return;
-    }
-  }
-  map.setView([anchor.lat, anchor.lng], Math.max(map.getZoom(), 18));
-}
-
-/* =========================
-   View + Edit init
-========================= */
-function syncView(){
-  viewBtn.textContent = `View: ${viewMode === "diagram" ? "Diagram" : "Map"}`;
-  if(viewMode === "diagram"){
-    mapDiv.style.display = "none";
-    canvas.style.display = "block";
-  }else{
-    canvas.style.display = "none";
-    mapDiv.style.display = "block";
-    ensureMapReady();
-  }
-}
-
-/* =========================
-   Hole getter + save UI
-========================= */
-function currentHole(){ return COURSE.holes[ui.currentHole - 1]; }
-function saveUIState(){ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }
-
-/* =========================
-   Minimal defaults
-========================= */
-function setHole(n){
-  if(n < 1) n = 18;
-  if(n > 18) n = 1;
-  ui.currentHole = n;
-  saveUIState();
-  edit.draft = [];
-  updateStatus();
-  if(viewMode === "map") centerMapOnHole(false);
-}
-
-/* =========================
-   Toast init done earlier
-========================= */
+});
 </script>
+
 </body>
 </html>
